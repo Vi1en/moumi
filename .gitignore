@@ -12,3 +12,5 @@ _smoke.py
 _smoke2.py
 _combat.py
 _extract_sprites.py
+_boss.py
+_playthrough.py

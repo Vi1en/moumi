@@ -407,7 +407,9 @@
   }
 
   function continueGame() {
-    screenFlash(() => enterWorld({ fresh: false }));
+    // If the player never started a run, Continue acts like New Game so they
+    // don't end up in an empty world.
+    screenFlash(() => enterWorld({ fresh: !levelData }));
   }
 
   /* ═══════════════════════════════════════════════════════════
