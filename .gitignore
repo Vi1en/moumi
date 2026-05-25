@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+node_modules/
+_shots/
+_verify.py
+_screenshot.py
+_screenshot2.py

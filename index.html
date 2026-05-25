@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Moumita's Birthday Adventure · A Pixel Love Letter</title>
+    <meta
+      name="description"
+      content="A cinematic pixel-art birthday RPG for Moumita. Help Moumita, Manab and Igloo the husky restore the Birthday Crystal before midnight."
+    />
+    <meta name="theme-color" content="#0c0625" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="icon" href="assets/sprites/husky_portrait.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- ════════════ Global cinematic overlays ════════════ -->
+    <div class="crt" aria-hidden="true">
+      <div class="crt__scanlines"></div>
+      <div class="crt__flicker"></div>
+      <div class="crt__vignette"></div>
+      <div class="crt__noise"></div>
+    </div>
+
+    <!-- Animated background canvas (stars + drifting hearts) -->
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+    <!-- Power button / audio toggle -->
+    <button
+      class="audio-toggle"
+      id="audio-toggle"
+      type="button"
+      aria-pressed="false"
+      title="Toggle chiptune music"
+    >
+      <span class="audio-toggle__dot" aria-hidden="true"></span>
+      <span class="audio-toggle__label">MUSIC: OFF</span>
+    </button>
+
+    <main id="app" class="screen-stack">
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- SCREEN 1 · LANDING                                          -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section class="screen screen--landing is-active" id="screen-landing">
+        <!-- Night sky scenery -->
+        <div class="sky" aria-hidden="true">
+          <div class="sky__aurora"></div>
+          <div class="sky__moon">
+            <span class="sky__moon-glow"></span>
+            <span class="sky__moon-crater sky__moon-crater--a"></span>
+            <span class="sky__moon-crater sky__moon-crater--b"></span>
+            <span class="sky__moon-crater sky__moon-crater--c"></span>
+          </div>
+          <div class="sky__cloud sky__cloud--1"></div>
+          <div class="sky__cloud sky__cloud--2"></div>
+
+          <!-- Parallax mountains drawn with CSS -->
+          <div class="parallax">
+            <div class="parallax__layer parallax__layer--far"></div>
+            <div class="parallax__layer parallax__layer--mid"></div>
+            <div class="parallax__layer parallax__layer--near"></div>
+            <div class="parallax__layer parallax__layer--ground"></div>
+          </div>
+
+          <!-- Floating lanterns rising from below -->
+          <div class="lanterns">
+            <span class="lantern" style="--i: 0"></span>
+            <span class="lantern" style="--i: 1"></span>
+            <span class="lantern" style="--i: 2"></span>
+            <span class="lantern" style="--i: 3"></span>
+            <span class="lantern" style="--i: 4"></span>
+            <span class="lantern" style="--i: 5"></span>
+          </div>
+        </div>
+
+        <!-- Hero foreground: pixel-art couple + husky -->
+        <div class="hero">
+          <div class="hero__chrome">
+            <span class="hero__corner hero__corner--tl"></span>
+            <span class="hero__corner hero__corner--tr"></span>
+            <span class="hero__corner hero__corner--bl"></span>
+            <span class="hero__corner hero__corner--br"></span>
+          </div>
+
+          <div class="hero__title">
+            <span class="hero__chip">★ A PIXEL LOVE LETTER ★</span>
+            <h1 class="title">
+              <span class="title__main" data-text="BIRTHDAY">BIRTHDAY</span>
+              <span class="title__main title__main--alt" data-text="ADVENTURE">
+                ADVENTURE
+              </span>
+            </h1>
+            <p class="tagline">
+              A Cozy 32-Bit RPG Made With Heart Pixels &amp; Husky Hugs
+            </p>
+          </div>
+
+          <div class="stage">
+            <!-- The character art is the share_scene crop:
+                 boy + girl + husky at the cake table -->
+            <img
+              class="stage__cast"
+              src="assets/sprites/share_scene.png"
+              alt="Pixel-art couple feeding cake to a husky companion"
+            />
+            <div class="stage__shadow" aria-hidden="true"></div>
+            <div class="stage__sparks" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <!-- Press Start prompt -->
+          <p class="press-start" id="press-start">
+            <span class="press-start__cursor">▶</span>
+            PRESS&nbsp;<kbd>START</kbd>&nbsp;TO BEGIN THE BIRTHDAY ADVENTURE
+            <span class="press-start__cursor press-start__cursor--r">◀</span>
+          </p>
+
+          <!-- Retro RPG menu -->
+          <nav class="menu" aria-label="Main menu">
+            <ul class="menu__list" id="menu-list">
+              <li class="menu__item is-selected" data-action="start">
+                <span class="menu__arrow">►</span>
+                <span class="menu__label">START GAME</span>
+                <span class="menu__hint">New Save · Chapter 1</span>
+              </li>
+              <li class="menu__item" data-action="continue">
+                <span class="menu__arrow">►</span>
+                <span class="menu__label">CONTINUE</span>
+                <span class="menu__hint">Resume Last Memory</span>
+              </li>
+              <li class="menu__item" data-action="gallery">
+                <span class="menu__arrow">►</span>
+                <span class="menu__label">CHARACTER GALLERY</span>
+                <span class="menu__hint">Meet the Heroes</span>
+              </li>
+              <li class="menu__item" data-action="settings">
+                <span class="menu__arrow">►</span>
+                <span class="menu__label">SETTINGS</span>
+                <span class="menu__hint">Music · CRT · Speed</span>
+              </li>
+              <li class="menu__item" data-action="credits">
+                <span class="menu__arrow">►</span>
+                <span class="menu__label">CREDITS</span>
+                <span class="menu__hint">A Love Letter</span>
+              </li>
+            </ul>
+          </nav>
+
+          <footer class="meta-row" aria-hidden="false">
+            <span class="meta-pill">▲▼ NAVIGATE</span>
+            <span class="meta-pill">↵ SELECT</span>
+            <span class="meta-pill">ESC BACK</span>
+            <span class="meta-pill meta-pill--accent">v1.0 · BUILT WITH ♥</span>
+          </footer>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- SCREEN 2 · INTRO CUTSCENE                                   -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section class="screen screen--cutscene" id="screen-intro" hidden>
+        <div class="cutscene">
+          <div class="cutscene__chapter">
+            <span class="cutscene__chapter-mark">~ PROLOGUE ~</span>
+            <h2 class="cutscene__chapter-title">The Stolen Cake Crystal</h2>
+          </div>
+
+          <div class="cutscene__stage">
+            <div class="cutscene__art">
+              <img
+                src="assets/sprites/birthday_full.png"
+                alt="The birthday celebration before the chaos"
+              />
+              <div class="cutscene__art-overlay"></div>
+            </div>
+          </div>
+
+          <div class="dialog" id="dialog">
+            <div class="dialog__portrait" id="dialog-portrait">
+              <img
+                id="dialog-portrait-img"
+                src="assets/sprites/husky_portrait.png"
+                alt="Speaker portrait"
+              />
+              <span class="dialog__portrait-name" id="dialog-name">???</span>
+            </div>
+            <div class="dialog__body">
+              <p class="dialog__text" id="dialog-text"></p>
+              <div class="dialog__hint">
+                <span class="dialog__hint-key">↵ / SPACE</span> next
+                <span class="dialog__indicator">▼</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="ghost-btn" id="skip-intro" type="button">SKIP ▶▶</button>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- SCREEN 3 · GAME WORLD (Memory Forest)                       -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section class="screen screen--world" id="screen-world" hidden>
+        <header class="hud">
+          <div class="hud__group">
+            <div class="hud__avatar">
+              <img src="assets/sprites/girl_portrait.png" alt="Moumita" />
+            </div>
+            <div class="hud__bars">
+              <div class="hud__name">MOUMITA · BIRTHDAY PRINCESS · LV 1</div>
+              <div class="bar bar--hp">
+                <span class="bar__label">HP</span>
+                <span class="bar__track">
+                  <span class="bar__fill" id="bar-hp" style="--p: 1"></span>
+                </span>
+                <span class="bar__value" id="bar-hp-text">20 / 20</span>
+              </div>
+              <div class="bar bar--xp">
+                <span class="bar__label">LOVE</span>
+                <span class="bar__track">
+                  <span class="bar__fill" id="bar-xp" style="--p: 0.12"></span>
+                </span>
+                <span class="bar__value" id="bar-xp-text">12 / 100</span>
+              </div>
+            </div>
+          </div>
+          <div class="hud__center">
+            <span class="hud__chapter">CHAPTER I</span>
+            <span class="hud__location" id="hud-location">MEMORY FOREST</span>
+          </div>
+          <div class="hud__group hud__group--right">
+            <div class="hud__clock">
+              <span class="hud__clock-label">MIDNIGHT IN</span>
+              <span class="hud__clock-time" id="hud-clock">11:42</span>
+            </div>
+            <div class="hud__inventory">
+              <span class="slot slot--rose">
+                <span class="slot__icon">❀</span>
+                <span class="slot__count" id="count-rose">0</span>
+              </span>
+              <span class="slot slot--heart">
+                <span class="slot__icon">♥</span>
+                <span class="slot__count" id="count-heart">0</span>
+              </span>
+              <span class="slot slot--memory">
+                <span class="slot__icon">✦</span>
+                <span class="slot__count" id="count-memory">0</span>
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <div class="world" id="world">
+          <canvas id="world-canvas"></canvas>
+
+          <div class="world__hint" id="world-hint">
+            <kbd>←</kbd><kbd>→</kbd> move &nbsp;·&nbsp; <kbd>↑</kbd> jump
+            &nbsp;·&nbsp; <kbd>E</kbd> interact &nbsp;·&nbsp; <kbd>ESC</kbd>
+            menu
+          </div>
+
+          <div class="toast" id="toast"></div>
+        </div>
+
+        <footer class="quest-log">
+          <div class="quest-log__title">QUEST</div>
+          <div class="quest-log__body" id="quest-text">
+            Collect 3 floating Memory Shards drifting through the forest.
+            Igloo says they smell like birthday icing.
+          </div>
+        </footer>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- TOUCH CONTROLS (mobile only)                                -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div class="touch" id="touch" aria-hidden="true">
+        <div class="touch__dpad">
+          <button class="touch__btn touch__btn--left"  data-touch="left"  type="button" aria-label="Move left">◀</button>
+          <button class="touch__btn touch__btn--up"    data-touch="jump"  type="button" aria-label="Jump">▲</button>
+          <button class="touch__btn touch__btn--right" data-touch="right" type="button" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch__actions">
+          <button class="touch__btn touch__btn--a" data-touch="interact" type="button" aria-label="Interact">E</button>
+          <button class="touch__btn touch__btn--b" data-touch="back"     type="button" aria-label="Back to menu">✕</button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- MODALS · Gallery / Settings / Credits                       -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <div class="modal" id="modal" hidden>
+        <div class="modal__panel">
+          <button class="modal__close" id="modal-close" type="button">✕</button>
+          <h3 class="modal__title" id="modal-title">Title</h3>
+          <div class="modal__body" id="modal-body"></div>
+        </div>
+      </div>
+    </main>
+
+    <script src="assets/js/landing.js"></script>
+    <script src="assets/js/game.js"></script>
+  </body>
+</html>
