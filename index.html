@@ -257,6 +257,11 @@
                 <span class="slot__count" id="count-memory">0</span>
               </span>
             </div>
+            <div class="hud__abilities" id="hud-abilities">
+              <span class="ability ability--dj"  data-ability="doubleJump" title="Double-jump (unlocked at 100 LOVE)">⤴</span>
+              <span class="ability ability--ds"  data-ability="dash"       title="Dash (unlocked at 250 LOVE)">»</span>
+              <span class="ability ability--spr" data-ability="spreadShot" title="Spread shot (unlocked at 500 LOVE)">✺</span>
+            </div>
           </div>
         </header>
 
@@ -265,8 +270,35 @@
 
           <div class="world__hint" id="world-hint">
             <kbd>←</kbd><kbd>→</kbd> move &nbsp;·&nbsp; <kbd>↑</kbd> jump
-            &nbsp;·&nbsp; <kbd>E</kbd> interact &nbsp;·&nbsp; <kbd>ESC</kbd>
-            menu
+            &nbsp;·&nbsp; <kbd>X</kbd> heart shot &nbsp;·&nbsp;
+            <kbd>Z</kbd> bark &nbsp;·&nbsp; <kbd>ESC</kbd> menu
+          </div>
+
+          <!-- Boss bar (hidden until a boss spawns) -->
+          <div class="boss-bar" id="boss-bar" hidden>
+            <div class="boss-bar__name" id="boss-bar-name">BOSS</div>
+            <div class="boss-bar__track">
+              <div class="boss-bar__fill" id="boss-bar-fill" style="--p:1"></div>
+            </div>
+          </div>
+
+          <!-- Chapter title card (shown briefly when entering a level) -->
+          <div class="chapter-card" id="chapter-card" hidden>
+            <div class="chapter-card__chap" id="chapter-card-chap">CHAPTER I</div>
+            <div class="chapter-card__name" id="chapter-card-name">MEMORY FOREST</div>
+            <div class="chapter-card__sub"  id="chapter-card-sub">collect the Memory Shards…</div>
+          </div>
+
+          <!-- Game Over / Chapter Complete overlay -->
+          <div class="game-overlay" id="game-overlay" hidden>
+            <div class="game-overlay__panel">
+              <div class="game-overlay__title" id="game-overlay-title">GAME OVER</div>
+              <div class="game-overlay__body"  id="game-overlay-body">…</div>
+              <div class="game-overlay__actions">
+                <button class="game-overlay__btn" id="game-overlay-retry"  type="button">RETRY</button>
+                <button class="game-overlay__btn game-overlay__btn--ghost" id="game-overlay-menu" type="button">MAIN MENU</button>
+              </div>
+            </div>
           </div>
 
           <div class="toast" id="toast"></div>
@@ -291,8 +323,15 @@
           <button class="touch__btn touch__btn--right" data-touch="right" type="button" aria-label="Move right">▶</button>
         </div>
         <div class="touch__actions">
-          <button class="touch__btn touch__btn--a" data-touch="interact" type="button" aria-label="Interact">E</button>
-          <button class="touch__btn touch__btn--b" data-touch="back"     type="button" aria-label="Back to menu">✕</button>
+          <button class="touch__btn touch__btn--bark"   data-touch="bark"   type="button" aria-label="Igloo bark (stun)">
+            <span class="touch__icon">🐾</span>
+            <span class="touch__cd" data-cd="bark"></span>
+          </button>
+          <button class="touch__btn touch__btn--attack" data-touch="attack" type="button" aria-label="Throw heart attack">
+            <span class="touch__icon">♥</span>
+            <span class="touch__cd" data-cd="attack"></span>
+          </button>
+          <button class="touch__btn touch__btn--b"      data-touch="back"   type="button" aria-label="Back to menu">✕</button>
         </div>
       </div>
 

@@ -8,3 +8,7 @@ _shots/
 _verify.py
 _screenshot.py
 _screenshot2.py
+_smoke.py
+_smoke2.py
+_combat.py
+_extract_sprites.py

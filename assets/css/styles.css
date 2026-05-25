@@ -1492,7 +1492,7 @@ kbd {
 }
 
 .touch__actions {
-  grid-template-columns: 56px 56px;
+  grid-template-columns: 56px 56px 56px;
 }
 
 .touch__btn {
@@ -1531,6 +1531,24 @@ kbd {
   box-shadow: 0 0 0 3px var(--night-0), 0 0 18px rgba(255, 209, 102, 0.5);
 }
 
+.touch__btn--attack {
+  border-color: var(--pink-2);
+  color: var(--pink-1);
+  background: rgba(60, 5, 40, 0.82);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 18px rgba(255, 95, 174, 0.55);
+  font-size: 22px;
+  text-shadow: 0 0 6px rgba(255, 95, 174, 0.85);
+}
+
+.touch__btn--bark {
+  border-color: var(--cyan-2);
+  color: var(--cyan-1);
+  background: rgba(5, 30, 60, 0.82);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 18px rgba(95, 240, 255, 0.55);
+  font-size: 22px;
+  text-shadow: 0 0 6px rgba(95, 240, 255, 0.85);
+}
+
 .touch__btn--b {
   border-color: var(--paper);
   font-size: 22px;
@@ -1542,6 +1560,28 @@ kbd {
   transform: translateY(2px) scale(0.94);
   background: rgba(255, 95, 174, 0.35);
 }
+
+/* cooldown wipe overlay (radial sweep) on action buttons */
+.touch__btn .touch__icon { position: relative; z-index: 2; }
+.touch__btn .touch__cd {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from -90deg,
+    rgba(0,0,0,0.55) calc(var(--cd, 0) * 360deg),
+    transparent 0
+  );
+  z-index: 1;
+  transition: background 0.08s linear;
+}
+.touch__btn.is-ready .touch__cd { background: transparent; }
+.touch__btn.is-locked {
+  opacity: 0.35;
+  filter: grayscale(.8);
+}
+.touch__btn { position: relative; overflow: hidden; }
 
 /* Show the touch UI only on actual touch devices, and only inside the game world.
    Detection is JS-driven (body.is-touch) because Android Chrome may incorrectly
@@ -1710,4 +1750,244 @@ body.is-touch.in-world .audio-toggle {
   .tagline { display: none; }
   .menu__hint { display: none; }
   .menu__item { padding: 6px 8px; font-size: 9px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   🩸 Ability row in HUD
+   ══════════════════════════════════════════════════════════════════════ */
+.hud__abilities {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 10px;
+  align-items: center;
+}
+.ability {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  border: 2px solid var(--violet);
+  background: rgba(180, 107, 255, 0.18);
+  color: var(--paper);
+  text-shadow: 0 0 6px rgba(180, 107, 255, 0.7);
+  border-radius: 4px;
+  opacity: 0.28;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.ability.is-unlocked {
+  opacity: 1;
+  transform: scale(1.04);
+  box-shadow: 0 0 10px rgba(180, 107, 255, 0.6);
+}
+.ability.is-new {
+  animation: ability-pop 0.9s ease;
+}
+@keyframes ability-pop {
+  0%   { transform: scale(0.4); filter: brightness(2.5); }
+  60%  { transform: scale(1.4); filter: brightness(2); }
+  100% { transform: scale(1.04); filter: brightness(1); }
+}
+@media (max-width: 520px) {
+  .ability { width: 18px; height: 18px; font-size: 11px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ☠️  Boss bar
+   ══════════════════════════════════════════════════════════════════════ */
+.boss-bar {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(200px, 60%, 420px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.boss-bar[hidden] { display: none; }
+.boss-bar__name {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--pink-1);
+  text-shadow: 0 0 6px rgba(255, 95, 174, 0.7);
+  background: rgba(10, 5, 32, 0.7);
+  padding: 4px 10px;
+  border: 2px solid var(--pink-2);
+}
+.boss-bar__track {
+  width: 100%;
+  height: 14px;
+  background: rgba(10, 5, 32, 0.85);
+  border: 3px solid var(--pink-2);
+  box-shadow: 0 0 12px rgba(255, 95, 174, 0.5);
+}
+.boss-bar__fill {
+  width: calc(var(--p) * 100%);
+  height: 100%;
+  background: linear-gradient(90deg, #ff2d8b, #ff9fd6, #fff4dc);
+  transition: width 0.18s ease;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   🎬 Chapter title card
+   ══════════════════════════════════════════════════════════════════════ */
+.chapter-card {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(10, 5, 32, 0.65) 0%, rgba(5, 2, 20, 0.92) 70%);
+  animation: chapter-card-in 2.2s ease forwards;
+}
+.chapter-card[hidden] { display: none; }
+.chapter-card__chap {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.4em;
+  color: var(--gold-2);
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.7);
+  margin-bottom: 12px;
+}
+.chapter-card__name {
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  color: var(--paper);
+  text-shadow: 0 0 12px rgba(255, 95, 174, 0.9), 0 0 24px rgba(95, 240, 255, 0.6);
+}
+.chapter-card__sub {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  margin-top: 16px;
+  color: var(--cyan-1);
+  text-shadow: 0 0 8px rgba(95, 240, 255, 0.7);
+}
+@keyframes chapter-card-in {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (max-width: 520px) {
+  .chapter-card__chap { font-size: 10px; }
+  .chapter-card__name { font-size: 18px; }
+  .chapter-card__sub  { font-size: 12px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   💀 Game over / Chapter complete overlay
+   ══════════════════════════════════════════════════════════════════════ */
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  background: rgba(5, 2, 20, 0.78);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  animation: overlay-in 0.45s ease forwards;
+}
+.game-overlay[hidden] { display: none; }
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.game-overlay__panel {
+  width: min(540px, 100%);
+  background:
+    radial-gradient(ellipse at top, rgba(255, 95, 174, 0.18) 0%, transparent 65%),
+    rgba(15, 6, 40, 0.96);
+  border: 3px solid var(--pink-2);
+  box-shadow:
+    0 0 0 3px var(--night-0),
+    0 0 32px rgba(255, 95, 174, 0.5),
+    inset 0 0 40px rgba(95, 240, 255, 0.08);
+  padding: 26px 22px;
+  text-align: center;
+}
+.game-overlay__title {
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  color: var(--pink-2);
+  text-shadow: 0 0 12px rgba(255, 95, 174, 0.7);
+  margin-bottom: 16px;
+}
+.game-overlay__body {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--paper-soft);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+.game-overlay__actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.game-overlay__btn {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--night-0);
+  background: linear-gradient(180deg, var(--pink-1), var(--pink-2));
+  border: 3px solid var(--pink-3);
+  padding: 10px 18px;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 16px rgba(255, 95, 174, 0.6);
+  transition: transform 0.08s ease;
+}
+.game-overlay__btn:hover { transform: translateY(-2px); }
+.game-overlay__btn:active { transform: translateY(1px) scale(0.97); }
+.game-overlay__btn--ghost {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--paper);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 8px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+.game-overlay--victory .game-overlay__title { color: var(--gold-2); text-shadow: 0 0 14px rgba(255, 209, 102, 0.7); }
+.game-overlay--chapter .game-overlay__title { color: var(--cyan-2); text-shadow: 0 0 14px rgba(95, 240, 255, 0.7); }
+
+@media (max-width: 520px) {
+  .game-overlay__title { font-size: 14px; }
+  .game-overlay__body  { font-size: 14px; }
+  .game-overlay__btn   { font-size: 9px; padding: 8px 12px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ⚡ Damage glitch effect (briefly applied to world canvas on player hit)
+   ══════════════════════════════════════════════════════════════════════ */
+.world.is-hurt #world-canvas {
+  filter: hue-rotate(-30deg) brightness(1.5) saturate(1.7);
+  animation: hurt-shake 0.32s ease;
+}
+@keyframes hurt-shake {
+  0%, 100% { transform: translateX(-50%); }
+  20% { transform: translateX(calc(-50% - 6px)); }
+  40% { transform: translateX(calc(-50% + 5px)); }
+  60% { transform: translateX(calc(-50% - 4px)); }
+  80% { transform: translateX(calc(-50% + 3px)); }
+}
+
+/* clock low-time pulse (used JS-side via class) */
+.hud__clock.is-low .hud__clock-time {
+  color: var(--pink-2);
+  text-shadow: 0 0 8px rgba(255, 95, 174, 0.9), 0 0 18px rgba(255, 45, 139, 0.7);
+  animation: clock-pulse 0.7s ease infinite;
+}
+@keyframes clock-pulse {
+  50% { transform: scale(1.08); }
 }
