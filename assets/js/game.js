@@ -11,6 +11,31 @@
 
   const SFX = window.__sfx || { blip() {}, confirm() {}, pickup() {}, heart() {} };
 
+  /* ───────── Robust touch / capability detection ─────────
+     CSS media queries are unreliable on Android (Chrome may report hover:hover
+     when a stylus, Bluetooth keyboard / mouse, or desktop-site mode is active).
+     Detect from JS using the most permissive signal: ANY touch input has ever
+     been usable on this device. We toggle a body class that the stylesheet
+     keys off of, so the touch overlay always appears when it should. */
+  const HAS_TOUCH =
+    "ontouchstart" in window ||
+    (navigator.maxTouchPoints   || 0) > 0 ||
+    (navigator.msMaxTouchPoints || 0) > 0;
+
+  // Some Android setups also need the class on `<html>` for very early CSS
+  document.documentElement.classList.toggle("is-touch", HAS_TOUCH);
+  document.body.classList.toggle("is-touch", HAS_TOUCH);
+
+  /* Coarse-environment helpers */
+  const IS_ANDROID = /android/i.test(navigator.userAgent || "");
+  const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+  document.body.classList.toggle("is-android", IS_ANDROID);
+  document.body.classList.toggle("is-ios", IS_IOS);
+
+  // Quick build banner in the console so we can verify the live deploy ships latest
+  try { console.log("[birthday] build 2026-05-26 · touch=%s android=%s ios=%s",
+    HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
+
   const screens = {
     landing: document.getElementById("screen-landing"),
     intro:   document.getElementById("screen-intro"),
@@ -412,9 +437,19 @@
     wctx.setTransform(worldDPR, 0, 0, worldDPR, 0, 0);
   }
 
-  window.addEventListener("resize", () => {
-    if (worldRunning) fitWorldCanvas();
+  /* Refit when the viewport changes for ANY reason — useful on Android where
+     the URL bar slides in/out as you scroll, changing window.innerHeight. */
+  function refit() { if (worldRunning) fitWorldCanvas(); }
+  window.addEventListener("resize", refit);
+  window.addEventListener("orientationchange", () => {
+    // orientation needs a small delay so the new dimensions settle
+    setTimeout(refit, 80);
+    setTimeout(refit, 350);
   });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", refit);
+    window.visualViewport.addEventListener("scroll", refit);
+  }
 
   // ── Player state ──
   const player = {
@@ -599,9 +634,16 @@
     if (document.hidden) clearKeys();
   });
 
-  /* ─── Touch controls (mobile D-pad + action buttons) ─── */
+  /* ─── Touch controls (mobile D-pad + action buttons) ───
+     Wired via the Pointer Events API which handles mouse, touch and pen
+     uniformly across iOS Safari, Android Chrome, Samsung Internet, Firefox
+     Mobile, and desktop browsers — without the duplicated touch+synth-click
+     events that broke Android in earlier revisions. */
   const touchBtns = document.querySelectorAll(".touch__btn");
+  const activePointers = new Map(); // pointerId -> btn
+
   function pressTouch(btn, on) {
+    if (!btn) return;
     btn.classList.toggle("is-pressed", on);
     const which = btn.dataset.touch;
     if (which === "left")  keys.left  = on;
@@ -614,20 +656,47 @@
       show("landing");
     }
   }
+
   touchBtns.forEach((btn) => {
-    // touch
-    btn.addEventListener("touchstart", (e) => {
+    // The container has touch-action:none in CSS so the browser does not
+    // also try to scroll/zoom. preventDefault here is belt-and-braces.
+    btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
+      try { btn.setPointerCapture(e.pointerId); } catch (_) { /* old browsers */ }
+      activePointers.set(e.pointerId, btn);
       pressTouch(btn, true);
       SFX.blip();
-    }, { passive: false });
-    btn.addEventListener("touchend",    (e) => { e.preventDefault(); pressTouch(btn, false); }, { passive: false });
-    btn.addEventListener("touchcancel", () => pressTouch(btn, false));
-    // also support mouse for testing on desktop dev tools
-    btn.addEventListener("mousedown",  () => pressTouch(btn, true));
-    btn.addEventListener("mouseup",    () => pressTouch(btn, false));
-    btn.addEventListener("mouseleave", () => pressTouch(btn, false));
+    });
+
+    const release = (e) => {
+      e.preventDefault();
+      const prev = activePointers.get(e.pointerId);
+      activePointers.delete(e.pointerId);
+      pressTouch(prev || btn, false);
+    };
+    btn.addEventListener("pointerup",     release);
+    btn.addEventListener("pointercancel", release);
+    btn.addEventListener("pointerleave",  release);
+    btn.addEventListener("lostpointercapture", () => pressTouch(btn, false));
+
+    // Fallback for ancient browsers without Pointer Events
+    if (!("onpointerdown" in window)) {
+      btn.addEventListener("touchstart", (e) => {
+        e.preventDefault(); pressTouch(btn, true); SFX.blip();
+      }, { passive: false });
+      btn.addEventListener("touchend", (e) => {
+        e.preventDefault(); pressTouch(btn, false);
+      }, { passive: false });
+      btn.addEventListener("touchcancel", () => pressTouch(btn, false));
+    }
+
+    // Prevent the long-press context menu on Android
+    btn.addEventListener("contextmenu", (e) => e.preventDefault());
   });
+
+  // If the user backgrounds the page mid-press, release all touch buttons
+  window.addEventListener("pagehide",  clearKeys);
+  document.addEventListener("pointercancel", clearKeys);
 
   // rotating interact hints so it feels alive
   const HINTS = [

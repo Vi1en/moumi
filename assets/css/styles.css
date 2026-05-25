@@ -146,9 +146,14 @@ kbd {
   position: absolute;
   inset: 0;
   opacity: 0.08;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1   0 0 0 0 1   0 0 0 0 1   0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1   0 0 0 0 1   0 0 0 0 1   0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   background-size: 220px 220px;
   animation: noise-shift 1.2s steps(6) infinite;
+}
+
+/* Heavy SVG fractalNoise can chew CPU on low-end Android — fade it on phones */
+@media (max-width: 520px) {
+  .crt__noise { opacity: 0.04; animation-duration: 2s; }
 }
 
 @keyframes crt-flicker {
@@ -1538,28 +1543,30 @@ kbd {
   background: rgba(255, 95, 174, 0.35);
 }
 
-/* Show the touch UI only on actual touch devices, and only inside the game world */
-@media (hover: none) and (pointer: coarse) {
-  body.in-world .touch {
-    display: flex;
-  }
-  .audio-toggle {
-    top: calc(env(safe-area-inset-top, 0px) + 10px);
-    right: 10px;
-    padding: 5px 8px;
-    font-size: 7px;
-    letter-spacing: 0.04em;
-  }
+/* Show the touch UI only on actual touch devices, and only inside the game world.
+   Detection is JS-driven (body.is-touch) because Android Chrome may incorrectly
+   report hover: hover / pointer: fine when a stylus, Bluetooth mouse, or
+   desktop-site mode is active, breaking pure CSS detection. */
+body.is-touch.in-world .touch {
+  display: flex;
 }
 
-/* On phones, when the game world is active, move the audio toggle out of the
-   HUD's way (a JS-applied class is what triggers this). */
-@media (max-width: 520px) {
-  body.in-world .audio-toggle {
-    top: auto;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
-    right: 14px;
-  }
+/* Bigger / glowier touch buttons feel right on phones */
+body.is-touch .audio-toggle {
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 10px;
+  padding: 5px 8px;
+  font-size: 7px;
+  letter-spacing: 0.04em;
+}
+
+/* On touch devices, when the game world is active, move the audio toggle out
+   of the HUD's way (regardless of width — Android phones can be wider than
+   520px). */
+body.is-touch.in-world .audio-toggle {
+  top: auto;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+  right: 14px;
 }
 
 /* SKIP button on the cutscene must not be intercepted by the audio toggle */
