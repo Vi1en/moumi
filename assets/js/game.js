@@ -33,7 +33,7 @@
   document.body.classList.toggle("is-ios", IS_IOS);
 
   // Quick build banner in the console so we can verify the live deploy ships latest
-  try { console.log("[birthday] build 2026-05-26-b · touch=%s android=%s ios=%s",
+  try { console.log("[birthday] build 2026-05-26-c · touch=%s android=%s ios=%s",
     HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
 
   const screens = {
@@ -530,7 +530,8 @@
         { type: "goblin", x: 1180, range: 40 },
       ],
       boss: { type: "slime", name: "FROSTING SLIME", x: 1500, hp: 14 },
-      secret: { x: 1100, y: GROUND_Y - 100, letter: 1 }, // hidden love letter
+      // Letter #1 on the ground path just before the boss — easy to grab on the way
+      secret: { x: 1000, y: GROUND_Y - 22, letter: 1 },
       next: "school",
     },
 
@@ -762,6 +763,13 @@
   const ABILITY_THRESHOLDS = { doubleJump: 100, dash: 250, spreadShot: 500 };
   let abilities = { doubleJump: false, dash: false, spreadShot: false };
 
+  // Secret weapon from Manab's Letter #1 — one-shots any boss in range
+  let hasLoveCannon = false;
+  let loveCannonCdMs = 0;
+  /** @type {{x1:number,y1:number,x2:number,y2:number,life:number}|null} */
+  let loveCannonBeam = null;
+  let lettersFound = { 1: false, 2: false, 3: false, 4: false };
+
   // Game state
   let gameState = "playing"; // playing | chapter_complete | game_over | victory | boss_intro
   let bossIntroMs = 0;
@@ -796,9 +804,33 @@
     if (hudAbilities) {
       hudAbilities.querySelectorAll(".ability").forEach((node) => {
         const key = node.dataset.ability;
+        if (key === "loveCannon") return;
         node.classList.toggle("is-unlocked", !!abilities[key]);
       });
     }
+    syncLoveCannonUI();
+  }
+
+  function syncLoveCannonUI() {
+    document.body.classList.toggle("has-love-cannon", hasLoveCannon);
+    const hud = hudAbilities && hudAbilities.querySelector('[data-ability="loveCannon"]');
+    if (hud) {
+      hud.hidden = !hasLoveCannon;
+      hud.classList.toggle("is-unlocked", hasLoveCannon);
+    }
+    document.querySelectorAll(".touch__btn--cannon").forEach((btn) => {
+      btn.hidden = !hasLoveCannon;
+    });
+  }
+
+  function grantLoveCannon() {
+    if (hasLoveCannon) return;
+    hasLoveCannon = true;
+    loveCannonCdMs = 0;
+    syncLoveCannonUI();
+    toast("★ MANAB'S LOVE CANNON — press C near a boss to one-shot it! ★", "#ffd166");
+    SFX.confirm();
+    setTimeout(() => SFX.heart(), 200);
   }
 
   function toast(msg, color = "#ff9fd6") {
@@ -905,6 +937,12 @@
     showChapterCard(levelData);
     refreshHUD();
     updateAbilityVisibility();
+
+    if (levelData.id === "forest" && !lettersFound[1] && !hasLoveCannon) {
+      setTimeout(() => {
+        toast("IGLOO: *sniff* …golden letter on the path — grab it before the slime!", "#ffd166");
+      }, 2800);
+    }
   }
 
   function makeEnemy(spec, profile) {
@@ -986,12 +1024,12 @@
      ═══════════════════════════════════════════════════════════ */
   const keys = {
     left: false, right: false, jump: false,
-    attack: false, bark: false, dash: false,
+    attack: false, bark: false, dash: false, cannon: false,
   };
 
   function clearKeys() {
     keys.left = keys.right = keys.jump = false;
-    keys.attack = keys.bark = keys.dash = false;
+    keys.attack = keys.bark = keys.dash = keys.cannon = false;
     document.querySelectorAll(".touch__btn.is-pressed")
       .forEach((b) => b.classList.remove("is-pressed"));
   }
@@ -1009,6 +1047,7 @@
     }
     if (k === "x" || k === "X") { keys.attack = true; tryAttack(); }
     if (k === "z" || k === "Z") { keys.bark = true; tryBark(); }
+    if (k === "c" || k === "C") { keys.cannon = true; tryLoveCannon(); }
     if (k === "Shift") { tryDash(); }
     if (k === "Escape") {
       worldRunning = false;
@@ -1024,6 +1063,7 @@
     if (k === "ArrowUp"    || k === "w" || k === "W" || k === " ") keys.jump = false;
     if (k === "x" || k === "X") keys.attack = false;
     if (k === "z" || k === "Z") keys.bark = false;
+    if (k === "c" || k === "C") keys.cannon = false;
   });
 
   window.addEventListener("blur", clearKeys);
@@ -1047,6 +1087,7 @@
     }
     if (which === "attack" && on) tryAttack();
     if (which === "bark"   && on) tryBark();
+    if (which === "cannon" && on) tryLoveCannon();
     if (which === "back"   && on) {
       worldRunning = false;
       clearKeys();
@@ -1109,6 +1150,55 @@
   const DASH_CD  = 1100;    // ms between dashes
   const DASH_MS  = 200;     // dash duration
   const DASH_SPEED = 5.6;
+  const LOVE_CANNON_CD = 8000;   // seconds between boss one-shots
+  const LOVE_CANNON_RANGE = 360; // px — boss bar appears inside this
+
+  function tryLoveCannon() {
+    if (!hasLoveCannon) {
+      toast("Find Manab's glowing letter on the forest path (before the boss)!", "#ff9fd6");
+      return;
+    }
+    if (gameState !== "playing" && gameState !== "boss_intro") return;
+    if (loveCannonCdMs > 0) {
+      toast(`Love Cannon recharging… ${Math.ceil(loveCannonCdMs / 1000)}s`, "#ffd166");
+      return;
+    }
+    if (!boss || boss.dead) {
+      toast("Love Cannon only works on bosses — keep walking right!", "#ffd166");
+      return;
+    }
+    if (Math.abs(player.x - boss.x) > LOVE_CANNON_RANGE) {
+      toast("Step closer to the boss, then press C (or ☄)!", "#ffd166");
+      return;
+    }
+
+    loveCannonCdMs = LOVE_CANNON_CD;
+    player.invincibleMs = 1400;
+
+    const px = player.x + player.w / 2;
+    const py = player.y + player.h / 2;
+    const bx = boss.x + boss.w / 2;
+    const by = boss.y + boss.h / 2;
+    loveCannonBeam = { x1: px, y1: py, x2: bx, y2: by, life: 1 };
+
+    for (let i = 0; i < 40; i++) {
+      worldSparks.push({
+        x: bx + (Math.random() - 0.5) * boss.w,
+        y: by + (Math.random() - 0.5) * boss.h,
+        vx: (Math.random() - 0.5) * 5,
+        vy: -2 - Math.random() * 4,
+        life: 1.2,
+        color: ["#ffd166", "#ff9fd6", "#fff4dc", "#ff5fae"][i % 4],
+      });
+    }
+
+    boss.hp = 0;
+    boss.hurtMs = 300;
+    SFX.confirm();
+    SFX.heart();
+    toast("MANAB'S LOVE CANNON — HAPPY BIRTHDAY!! ♥", "#ffd166");
+    setTimeout(() => killBoss(), 350);
+  }
 
   function tryAttack() {
     if (gameState !== "playing" && gameState !== "boss_intro") return;
@@ -1327,8 +1417,10 @@
     if (!hudAbilities) return;
     hudAbilities.querySelectorAll(".ability").forEach((node) => {
       const key = node.dataset.ability;
+      if (key === "loveCannon") return;
       node.classList.toggle("is-unlocked", !!abilities[key]);
     });
+    syncLoveCannonUI();
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1346,6 +1438,11 @@
     if (player.dashCdMs   > 0) player.dashCdMs   = Math.max(0, player.dashCdMs   - dt);
     if (player.dashMs     > 0) player.dashMs     = Math.max(0, player.dashMs     - dt);
     if (player.invincibleMs > 0) player.invincibleMs = Math.max(0, player.invincibleMs - dt);
+    if (loveCannonCdMs > 0) loveCannonCdMs = Math.max(0, loveCannonCdMs - dt);
+    if (loveCannonBeam) {
+      loveCannonBeam.life -= dt * 0.0025;
+      if (loveCannonBeam.life <= 0) loveCannonBeam = null;
+    }
 
     if (damageGlitchMs > 0) damageGlitchMs = Math.max(0, damageGlitchMs - dt);
     if (pet.barkRingMs > 0) pet.barkRingMs = Math.max(0, pet.barkRingMs - dt);
@@ -1353,6 +1450,7 @@
     // Touch cooldown overlays
     setTouchCd("attack", 1 - (player.attackCdMs / HEART_CD));
     setTouchCd("bark",   1 - (player.barkCdMs / BARK_CD));
+    setTouchCd("cannon", hasLoveCannon ? 1 - (loveCannonCdMs / LOVE_CANNON_CD) : 0, !hasLoveCannon);
 
     updatePlayer(dt);
     updatePet(dt);
@@ -1802,10 +1900,10 @@
       }
     }
 
-    // Secret room — pick up love letter when very close
+    // Secret love letter pickup (generous hitbox — it's a birthday gift!)
     if (secret && !secret.collected) {
-      if (Math.abs(secret.x - (player.x + player.w / 2)) < 12 &&
-          Math.abs(secret.y - (player.y + player.h / 2)) < 18) {
+      if (Math.abs(secret.x - (player.x + player.w / 2)) < 22 &&
+          Math.abs(secret.y - (player.y + player.h / 2)) < 28) {
         secret.collected = true;
         openLoveLetter(secret.letter);
       }
@@ -2221,19 +2319,30 @@
 
     if (secret && !secret.collected) {
       const x = Math.round(secret.x - camera.x);
-      if (x > -20 && x < LW + 20) {
-        // hidden floating envelope (sparkles to give a tiny clue)
-        const y = Math.round(secret.y + Math.sin(performance.now() * 0.003) * 2);
-        wctx.globalAlpha = 0.4 + Math.sin(performance.now() * 0.004) * 0.3;
+      if (x > -30 && x < LW + 30) {
+        const y = Math.round(secret.y + Math.sin(performance.now() * 0.003) * 3);
+        const pulse = 0.65 + Math.sin(performance.now() * 0.005) * 0.35;
+        // golden beacon so letter #1 is findable before the boss
+        const r = 22;
+        const grad = wctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, `rgba(255, 209, 102, ${pulse * 0.9})`);
+        grad.addColorStop(0.5, `rgba(255, 159, 214, ${pulse * 0.4})`);
+        grad.addColorStop(1, "rgba(255, 209, 102, 0)");
+        wctx.fillStyle = grad;
+        wctx.fillRect(x - r, y - r, r * 2, r * 2);
         wctx.fillStyle = "#fff4dc";
-        wctx.fillRect(x - 7, y - 5, 14, 10);
+        wctx.fillRect(x - 9, y - 6, 18, 12);
         wctx.fillStyle = "#ff5fae";
         wctx.beginPath();
-        wctx.moveTo(x - 7, y - 5);
-        wctx.lineTo(x, y);
-        wctx.lineTo(x + 7, y - 5);
+        wctx.moveTo(x - 9, y - 6);
+        wctx.lineTo(x, y + 1);
+        wctx.lineTo(x + 9, y - 6);
         wctx.fill();
-        wctx.globalAlpha = 1;
+        wctx.fillStyle = "#ffd166";
+        wctx.fillRect(x - 2, y - 8, 4, 3);
+        wctx.fillStyle = "#ffffff";
+        wctx.font = "8px monospace";
+        wctx.fillText("♥", x - 3, y - 2);
       }
     }
   }
@@ -2570,6 +2679,33 @@
     wctx.fillRect(0, 0, LW, LH);
   }
 
+  function drawLoveCannonBeam() {
+    if (!loveCannonBeam) return;
+    const b = loveCannonBeam;
+    const x1 = b.x1 - camera.x;
+    const y1 = b.y1;
+    const x2 = b.x2 - camera.x;
+    const y2 = b.y2;
+    const a = Math.max(0, b.life);
+    wctx.save();
+    wctx.globalAlpha = a;
+    wctx.strokeStyle = "#ffd166";
+    wctx.lineWidth = 6;
+    wctx.shadowColor = "#ff5fae";
+    wctx.shadowBlur = 14;
+    wctx.beginPath();
+    wctx.moveTo(x1, y1);
+    wctx.lineTo(x2, y2);
+    wctx.stroke();
+    wctx.lineWidth = 2;
+    wctx.strokeStyle = "#ffffff";
+    wctx.beginPath();
+    wctx.moveTo(x1, y1);
+    wctx.lineTo(x2, y2);
+    wctx.stroke();
+    wctx.restore();
+  }
+
   function drawGlitch() {
     if (damageGlitchMs <= 0) return;
     const a = damageGlitchMs / 320;
@@ -2613,6 +2749,7 @@
       drawProjectiles();
       drawEnemies();
       drawBoss();
+      drawLoveCannonBeam();
       drawPet();
       drawPlayer();
       drawWeather();
@@ -2735,7 +2872,9 @@
         title: "TO MOUMITA · LETTER #1",
         body: `the way you laugh at your own jokes before you finish them<br/>
                makes the whole day feel sun-warm.<br/><br/>
-               i'd find this memory forest a hundred times to keep that laugh safe. — m`,
+               i'd find this memory forest a hundred times to keep that laugh safe.<br/><br/>
+               <strong style="color:#ffd166">P.S. I hid a Love Cannon in this letter — press C (or ☄) next to any boss. One shot. Always.</strong><br/><br/>
+               — m`,
       },
       2: {
         title: "TO MOUMITA · LETTER #2",
@@ -2758,9 +2897,14 @@
     };
     const L = letters[letterId] || letters[1];
     openModal(L.title, `<div class="credits"><p class="credits__line">${L.body}</p></div>`);
+    if (letterId === 1 && !lettersFound[1]) {
+      lettersFound[1] = true;
+      grantLoveCannon();
+    } else {
+      toast("you found a hidden love letter!", "#ff5fae");
+    }
     SFX.heart();
     setTimeout(() => SFX.heart(), 300);
-    toast("you found a hidden love letter!", "#ff5fae");
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -2793,6 +2937,10 @@
     hp = hpMax;
     xp = 0;
     abilities = { doubleJump: false, dash: false, spreadShot: false };
+    hasLoveCannon = false;
+    loveCannonCdMs = 0;
+    loveCannonBeam = null;
+    lettersFound = { 1: false, 2: false, 3: false, 4: false };
     midnightMs = 11 * 60 * 1000 + 42 * 1000;
     startedEnding = false;
     hintIdx = 0;

@@ -258,6 +258,7 @@
               </span>
             </div>
             <div class="hud__abilities" id="hud-abilities">
+              <span class="ability ability--cannon" data-ability="loveCannon" title="Love Cannon — from Letter #1 (C)" hidden>☄</span>
               <span class="ability ability--dj"  data-ability="doubleJump" title="Double-jump (unlocked at 100 LOVE)">⤴</span>
               <span class="ability ability--ds"  data-ability="dash"       title="Dash (unlocked at 250 LOVE)">»</span>
               <span class="ability ability--spr" data-ability="spreadShot" title="Spread shot (unlocked at 500 LOVE)">✺</span>
@@ -270,8 +271,9 @@
 
           <div class="world__hint" id="world-hint">
             <kbd>←</kbd><kbd>→</kbd> move &nbsp;·&nbsp; <kbd>↑</kbd> jump
-            &nbsp;·&nbsp; <kbd>X</kbd> heart shot &nbsp;·&nbsp;
-            <kbd>Z</kbd> bark &nbsp;·&nbsp; <kbd>ESC</kbd> menu
+            &nbsp;·&nbsp; <kbd>X</kbd> heart &nbsp;·&nbsp; <kbd>Z</kbd> bark
+            &nbsp;·&nbsp; <kbd>C</kbd> love cannon <span class="hint-cannon-note">(letter #1)</span>
+            &nbsp;·&nbsp; <kbd>ESC</kbd> menu
           </div>
 
           <!-- Boss bar (hidden until a boss spawns) -->
@@ -330,6 +332,10 @@
           <button class="touch__btn touch__btn--attack" data-touch="attack" type="button" aria-label="Throw heart attack">
             <span class="touch__icon">♥</span>
             <span class="touch__cd" data-cd="attack"></span>
+          </button>
+          <button class="touch__btn touch__btn--cannon" data-touch="cannon" type="button" aria-label="Love Cannon (boss finisher)" hidden>
+            <span class="touch__icon">☄</span>
+            <span class="touch__cd" data-cd="cannon"></span>
           </button>
           <button class="touch__btn touch__btn--b"      data-touch="back"   type="button" aria-label="Back to menu">✕</button>
         </div>

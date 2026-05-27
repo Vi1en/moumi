@@ -1492,7 +1492,7 @@ kbd {
 }
 
 .touch__actions {
-  grid-template-columns: 56px 56px 56px;
+  grid-template-columns: 56px 56px 56px 56px;
 }
 
 .touch__btn {
@@ -1539,6 +1539,16 @@ kbd {
   font-size: 22px;
   text-shadow: 0 0 6px rgba(255, 95, 174, 0.85);
 }
+
+.touch__btn--cannon {
+  border-color: var(--gold-2);
+  color: var(--gold-1);
+  background: rgba(60, 40, 5, 0.88);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 22px rgba(255, 209, 102, 0.65);
+  font-size: 22px;
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.9);
+}
+.touch__btn--cannon[hidden] { display: none !important; }
 
 .touch__btn--bark {
   border-color: var(--cyan-2);
@@ -1781,6 +1791,16 @@ body.is-touch.in-world .audio-toggle {
   transform: scale(1.04);
   box-shadow: 0 0 10px rgba(180, 107, 255, 0.6);
 }
+.ability--cannon.is-unlocked {
+  border-color: var(--gold-2);
+  background: rgba(255, 209, 102, 0.22);
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.75);
+  text-shadow: 0 0 8px rgba(255, 244, 220, 0.9);
+}
+.ability[hidden] { display: none; }
+
+.hint-cannon-note { opacity: 0.55; font-size: 0.9em; }
+body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
 .ability.is-new {
   animation: ability-pop 0.9s ease;
 }
@@ -1791,6 +1811,12 @@ body.is-touch.in-world .audio-toggle {
 }
 @media (max-width: 520px) {
   .ability { width: 18px; height: 18px; font-size: 11px; }
+  .touch__actions {
+    grid-template-columns: 50px 50px;
+    grid-template-rows: 50px 50px;
+  }
+  .touch__btn { width: 50px; height: 50px; font-size: 16px; }
+  .world__hint { font-size: 10px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
