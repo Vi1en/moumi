@@ -33,7 +33,7 @@
   document.body.classList.toggle("is-ios", IS_IOS);
 
   // Quick build banner in the console so we can verify the live deploy ships latest
-  try { console.log("[birthday] build 2026-05-27-g · touch=%s android=%s ios=%s",
+  try { console.log("[birthday] build 2026-05-28-h · touch=%s android=%s ios=%s",
     HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
 
   const screens = {
@@ -479,22 +479,9 @@
     let availW = rect.width;
     let availH = rect.height;
 
-    // iOS / Android: use the visible play-area size (excludes HUD, quest, touch dock)
-    if (HAS_TOUCH && window.visualViewport && document.body.classList.contains("in-world")) {
-      const vv = window.visualViewport;
-      const pr = parent.getBoundingClientRect();
-      availW = pr.width;
-      availH = Math.max(80, Math.min(pr.height, vv.height - Math.max(0, pr.top)));
-    }
-
-    const questEl = parent.querySelector(".quest-log");
-    if (questEl && document.body.classList.contains("in-world")) {
-      availH -= questEl.getBoundingClientRect().height;
-    }
-
     if (availW < 20 || availH < 20) return;
 
-    const cssScale = Math.max(0.45, Math.min(availW / LW, availH / LH));
+    const cssScale = Math.max(0.5, Math.min(availW / LW, availH / LH));
     const drawW = Math.round(LW * cssScale);
     const drawH = Math.round(LH * cssScale);
 
@@ -505,18 +492,11 @@
     worldCanvas.style.position = "absolute";
     worldCanvas.style.width  = drawW + "px";
     worldCanvas.style.height = drawH + "px";
-    const mobilePlay = HAS_TOUCH && document.body.classList.contains("in-world");
     worldCanvas.style.left = "50%";
     worldCanvas.style.right = "auto";
-    if (mobilePlay) {
-      worldCanvas.style.top = "50%";
-      worldCanvas.style.bottom = "auto";
-      worldCanvas.style.transform = "translate(-50%, -50%)";
-    } else {
-      worldCanvas.style.top = "auto";
-      worldCanvas.style.bottom = "0";
-      worldCanvas.style.transform = "translateX(-50%)";
-    }
+    worldCanvas.style.top = "auto";
+    worldCanvas.style.bottom = "0";
+    worldCanvas.style.transform = "translateX(-50%)";
     worldCanvas.style.maxWidth = "100%";
     worldCanvas.style.maxHeight = "100%";
 
@@ -1105,8 +1085,17 @@
       .forEach((b) => b.classList.remove("is-pressed"));
   }
 
+  function gameKeysBlocked(e) {
+    if (!screens.world.classList.contains("is-active")) return true;
+    if (document.body.classList.contains("modal-open")) return true;
+    const tag = e.target && e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (e.target && e.target.isContentEditable) return true;
+    return false;
+  }
+
   document.addEventListener("keydown", (e) => {
-    if (!screens.world.classList.contains("is-active")) return;
+    if (gameKeysBlocked(e)) return;
     const k = e.key;
     if (k === "ArrowLeft"  || k === "a" || k === "A") keys.left = true;
     if (k === "ArrowRight" || k === "d" || k === "D") keys.right = true;
@@ -1128,6 +1117,7 @@
     }
   });
   document.addEventListener("keyup", (e) => {
+    if (gameKeysBlocked(e)) return;
     const k = e.key;
     if (k === "ArrowLeft"  || k === "a" || k === "A") keys.left = false;
     if (k === "ArrowRight" || k === "d" || k === "D") keys.right = false;

@@ -1077,41 +1077,32 @@ body.is-touch.in-world .screen--world .world {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
 }
 
-/* Quest floats on top of the game — does not steal a flex row */
-body.is-touch.in-world .world .quest-log {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
+/* Quest strip sits between HUD and game (in flow — never covers gameplay) */
+body.is-touch.in-world .screen--world .quest-log {
+  flex: 0 0 auto;
+  position: static;
   margin: 0;
   padding: 4px 8px;
   gap: 6px;
   grid-template-columns: auto 1fr;
   align-items: center;
-  background: rgba(10, 5, 32, 0.88);
   border-top: none;
   border-bottom: 2px solid var(--pink-2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-body.is-touch.in-world .world .quest-log__title {
+body.is-touch.in-world .screen--world .quest-log__title {
   font-size: 7px;
   padding: 3px 6px;
 }
 
-body.is-touch.in-world .world .quest-log__body {
-  font-size: 12px;
+body.is-touch.in-world .screen--world .quest-log__body {
+  font-size: 11px;
   line-height: 1.2;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-align: left;
@@ -1354,15 +1345,6 @@ body.is-touch.in-world .world .quest-log__body {
   transform: translate(-50%, 0);
 }
 
-/* quest log (inside .world — overlays canvas, never stacks with touch dock) */
-.world .quest-log {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-}
-
 .quest-log {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -1576,7 +1558,10 @@ body.is-touch.in-world .world .quest-log__body {
   }
   .hud__center { order: -1; }
   .hud__group--right { justify-content: center; flex-wrap: wrap; }
-  .quest-log { grid-template-columns: 1fr; text-align: center; }
+  .screen--world .quest-log {
+    grid-template-columns: auto 1fr;
+    text-align: left;
+  }
   .dialog { grid-template-columns: 1fr; }
   .dialog__portrait { display: none; }
   .hero__corner { width: 16px; height: 16px; }
@@ -2060,8 +2045,8 @@ body.is-touch.in-world .audio-toggle {
 
 /* Landscape in-game: more room for canvas + controls */
 @media (orientation: landscape) and (max-height: 520px) {
-  body.is-touch.in-world .world .quest-log {
-    max-height: 40px;
+  body.is-touch.in-world .screen--world .quest-log {
+    max-height: 36px;
     padding: 3px 6px;
   }
   body.is-touch.in-world .screen--world .hud__bars .bar__value {
@@ -2448,16 +2433,6 @@ body.in-celebration .world__hint {
   40% { transform: translateX(calc(-50% + 5px)); }
   60% { transform: translateX(calc(-50% - 4px)); }
   80% { transform: translateX(calc(-50% + 3px)); }
-}
-body.is-touch.in-world .world.is-hurt #world-canvas {
-  animation: hurt-shake-touch 0.32s ease;
-}
-@keyframes hurt-shake-touch {
-  0%, 100% { transform: translate(-50%, -50%); }
-  20% { transform: translate(calc(-50% - 6px), -50%); }
-  40% { transform: translate(calc(-50% + 5px), -50%); }
-  60% { transform: translate(calc(-50% - 4px), -50%); }
-  80% { transform: translate(calc(-50% + 3px), -50%); }
 }
 
 /* clock low-time pulse (used JS-side via class) */
