@@ -1464,35 +1464,92 @@ kbd {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   📱 Touch controls (mobile only)
+   📱 Touch controls — two-thumb layout (mobile)
    ══════════════════════════════════════════════════════════════════════ */
 .touch {
   position: fixed;
-  inset: auto 0 0 0;
+  inset: 0;
   display: none;
   z-index: 6500;
-  padding: 12px env(safe-area-inset-right, 12px) calc(env(safe-area-inset-bottom, 0px) + 12px) env(safe-area-inset-left, 12px);
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 12px;
+  pointer-events: none;
+  padding:
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    max(12px, env(safe-area-inset-bottom, 0px))
+    env(safe-area-inset-left, 0px);
+}
+
+.touch__zone {
+  position: absolute;
+  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
   pointer-events: none;
 }
 
-.touch__dpad,
-.touch__actions {
-  display: grid;
-  gap: 8px;
+.touch__zone--left {
+  left: max(10px, env(safe-area-inset-left, 0px));
+  align-items: flex-start;
+}
+
+.touch__zone--right {
+  right: max(10px, env(safe-area-inset-right, 0px));
+  align-items: flex-end;
+}
+
+.touch__label {
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.45);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* Virtual joystick — left thumb */
+.touch__stick {
+  position: relative;
+  width: 120px;
+  height: 120px;
   pointer-events: auto;
+  touch-action: none;
+}
+.touch__stick-base {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(10, 5, 32, 0.55);
+  border: 3px solid rgba(95, 240, 255, 0.45);
+  box-shadow: 0 0 0 3px var(--night-0), inset 0 0 20px rgba(95, 240, 255, 0.12);
+}
+.touch__stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: rgba(95, 240, 255, 0.35);
+  border: 3px solid var(--cyan-2);
+  box-shadow: 0 0 16px rgba(95, 240, 255, 0.55);
+  transition: transform 0.04s ease-out;
+  pointer-events: none;
+}
+.touch__stick.is-active .touch__stick-knob {
+  background: rgba(255, 95, 174, 0.4);
+  border-color: var(--pink-2);
 }
 
-.touch__dpad {
-  grid-template-columns: 56px 56px 56px;
-  grid-template-rows: 56px;
-  align-items: end;
-}
-
-.touch__actions {
-  grid-template-columns: 56px 56px 56px 56px;
+/* Right thumb — skill row + big jump */
+.touch__fight {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  pointer-events: auto;
+  margin-bottom: 4px;
 }
 
 .touch__btn {
@@ -1517,12 +1574,35 @@ kbd {
   user-select: none;
 }
 
-.touch__btn--up {
-  background: rgba(40, 5, 32, 0.78);
+.touch__btn--jump-xl {
+  width: 88px;
+  height: 88px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
   border-color: var(--pink-2);
-  box-shadow: 0 0 0 3px var(--night-0), 0 0 18px rgba(255, 95, 174, 0.5);
-  text-shadow: 0 0 6px rgba(255, 95, 174, 0.6);
+  color: var(--paper);
+  background: rgba(80, 10, 50, 0.88);
+  box-shadow: 0 0 0 4px var(--night-0), 0 0 24px rgba(255, 95, 174, 0.65);
+  pointer-events: auto;
 }
+
+.touch__btn--skill {
+  width: 58px;
+  height: 58px;
+}
+
+.touch__btn--pause {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top, 0px));
+  right: max(10px, env(safe-area-inset-right, 0px));
+  width: 40px;
+  height: 40px;
+  font-size: 12px;
+  pointer-events: auto;
+  opacity: 0.75;
+  border-color: var(--paper);
+}
+.touch__btn--pause:active { opacity: 1; }
 
 .touch__btn--a {
   background: rgba(40, 5, 32, 0.78);
@@ -1598,7 +1678,11 @@ kbd {
    report hover: hover / pointer: fine when a stylus, Bluetooth mouse, or
    desktop-site mode is active, breaking pure CSS detection. */
 body.is-touch.in-world .touch {
-  display: flex;
+  display: block;
+}
+
+body.is-touch.in-world .world__hint {
+  display: none;
 }
 
 /* Bigger / glowier touch buttons feel right on phones */
@@ -1861,12 +1945,10 @@ body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
 }
 @media (max-width: 520px) {
   .ability { width: 18px; height: 18px; font-size: 11px; }
-  .touch__actions {
-    grid-template-columns: 50px 50px;
-    grid-template-rows: 50px 50px;
-  }
-  .touch__btn { width: 50px; height: 50px; font-size: 16px; }
-  .world__hint { font-size: 10px; }
+  .touch__stick { width: 108px; height: 108px; }
+  .touch__stick-knob { width: 46px; height: 46px; margin: -23px 0 0 -23px; }
+  .touch__btn--jump-xl { width: 80px; height: 80px; font-size: 10px; }
+  .touch__btn--skill { width: 52px; height: 52px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -2036,6 +2118,65 @@ body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
 }
 .game-overlay--victory .game-overlay__title { color: var(--gold-2); text-shadow: 0 0 14px rgba(255, 209, 102, 0.7); }
 .game-overlay--chapter .game-overlay__title { color: var(--cyan-2); text-shadow: 0 0 14px rgba(95, 240, 255, 0.7); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   🎂 Birthday celebration finale (full-screen)
+   ══════════════════════════════════════════════════════════════════════ */
+.celebration {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  background: #050214;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+.celebration.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.celebration[hidden] { display: none !important; }
+
+#celebration-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.celebration__text {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  transform: translateX(-50%);
+  width: min(92%, 520px);
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: clamp(12px, 3.5vw, 18px);
+  letter-spacing: 0.14em;
+  color: var(--gold-1);
+  text-shadow:
+    0 0 12px rgba(255, 209, 102, 0.9),
+    0 0 28px rgba(255, 95, 174, 0.6);
+  pointer-events: none;
+  animation: celebration-text-pulse 1.2s ease-in-out infinite;
+}
+.celebration__text.is-hug {
+  color: var(--pink-1);
+  font-size: clamp(14px, 4vw, 22px);
+}
+@keyframes celebration-text-pulse {
+  50% { transform: translateX(-50%) scale(1.04); filter: brightness(1.2); }
+}
+
+body.in-celebration .touch,
+body.in-celebration .hud,
+body.in-celebration .quest-log,
+body.in-celebration .world__hint {
+  opacity: 0;
+  pointer-events: none;
+}
 
 @media (max-width: 520px) {
   .game-overlay__title { font-size: 14px; }

@@ -237,6 +237,8 @@
     musicGain: null,
     isOn: false,
     loopId: null,
+    partyLoopId: null,
+    _partyOn: false,
 
     init() {
       if (this.ctx) return;
@@ -343,6 +345,87 @@
         this.ctx.currentTime + 0.6
       );
       if (this.loopId) clearTimeout(this.loopId);
+    },
+
+    /* Upbeat party loop for the birthday celebration finale */
+    partyMelody: [
+      [0, 1], [0, 1], [2, 1], [2, 1], [4, 1], [4, 1], [5, 2],
+      [4, 1], [2, 1], [0, 2],
+      [-3, 1], [-3, 1], [0, 1], [0, 1], [4, 1], [5, 2],
+      [7, 1], [5, 1], [4, 2],
+    ],
+    partyBass: [
+      [-12, 2], [-8, 2], [-5, 2], [-3, 2],
+      [-12, 2], [-8, 2], [-5, 2], [-3, 2],
+    ],
+
+    startPartyMusic() {
+      this.init();
+      if (!this.ctx) return;
+      if (this.ctx.state === "suspended") this.ctx.resume();
+      this.isOn = false;
+      if (this.loopId) clearTimeout(this.loopId);
+      this._partyOn = true;
+      this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.musicGain.gain.linearRampToValueAtTime(
+        0.34,
+        this.ctx.currentTime + 0.35
+      );
+      this._schedulePartyLoop();
+    },
+
+    stopPartyMusic() {
+      this._partyOn = false;
+      if (!this.ctx) return;
+      if (this.partyLoopId) clearTimeout(this.partyLoopId);
+      this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+      this.musicGain.gain.linearRampToValueAtTime(
+        0,
+        this.ctx.currentTime + 0.8
+      );
+    },
+
+    _schedulePartyLoop() {
+      if (!this._partyOn || !this.ctx) return;
+      const bpm = 132;
+      const beat = 60 / bpm;
+      let t = this.ctx.currentTime + 0.05;
+      for (const [n, d] of this.partyMelody) {
+        const f = this.midiToHz(n);
+        const dur = d * beat * 0.92;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = "square";
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.1, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g);
+        g.connect(this.musicGain);
+        o.start(t);
+        o.stop(t + dur + 0.02);
+        t += d * beat;
+      }
+      let bt = this.ctx.currentTime + 0.05;
+      for (const [n, d] of this.partyBass) {
+        const f = this.midiToHz(n);
+        const dur = d * beat * 0.92;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = "triangle";
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0, bt);
+        g.gain.linearRampToValueAtTime(0.07, bt + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, bt + dur);
+        o.connect(g);
+        g.connect(this.musicGain);
+        o.start(bt);
+        o.stop(bt + dur + 0.02);
+        bt += d * beat;
+      }
+      const loopLen =
+        this.partyMelody.reduce((s, [, d]) => s + d, 0) * beat * 1000;
+      this.partyLoopId = setTimeout(() => this._schedulePartyLoop(), loopLen - 30);
     },
 
     _scheduleLoop() {

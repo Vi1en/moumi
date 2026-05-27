@@ -304,6 +304,12 @@
           </div>
 
           <div class="toast" id="toast"></div>
+
+          <!-- Birthday finale: fireworks → dance → group hug -->
+          <div class="celebration" id="celebration" hidden>
+            <canvas id="celebration-canvas" aria-hidden="true"></canvas>
+            <p class="celebration__text" id="celebration-text"></p>
+          </div>
         </div>
 
         <footer class="quest-log">
@@ -316,28 +322,40 @@
       </section>
 
       <!-- ═══════════════════════════════════════════════════════════ -->
-      <!-- TOUCH CONTROLS (mobile only)                                -->
+      <!-- TOUCH CONTROLS — two-thumb mobile layout                    -->
+      <!-- Left thumb: move stick · Right thumb: jump + actions        -->
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div class="touch" id="touch" aria-hidden="true">
-        <div class="touch__dpad">
-          <button class="touch__btn touch__btn--left"  data-touch="left"  type="button" aria-label="Move left">◀</button>
-          <button class="touch__btn touch__btn--up"    data-touch="jump"  type="button" aria-label="Jump">▲</button>
-          <button class="touch__btn touch__btn--right" data-touch="right" type="button" aria-label="Move right">▶</button>
+        <button class="touch__btn touch__btn--pause" data-touch="back" type="button" aria-label="Pause / menu">Ⅱ</button>
+
+        <div class="touch__zone touch__zone--left">
+          <div class="touch__stick" id="touch-stick" aria-label="Move left and right">
+            <div class="touch__stick-base"></div>
+            <div class="touch__stick-knob" id="touch-stick-knob"></div>
+          </div>
+          <span class="touch__label">MOVE</span>
         </div>
-        <div class="touch__actions">
-          <button class="touch__btn touch__btn--bark"   data-touch="bark"   type="button" aria-label="Igloo bark (stun)">
-            <span class="touch__icon">🐾</span>
-            <span class="touch__cd" data-cd="bark"></span>
+
+        <div class="touch__zone touch__zone--right">
+          <div class="touch__fight">
+            <button class="touch__btn touch__btn--skill touch__btn--bark" data-touch="bark" type="button" aria-label="Bark stun">
+              <span class="touch__icon">🐾</span>
+              <span class="touch__cd" data-cd="bark"></span>
+            </button>
+            <button class="touch__btn touch__btn--skill touch__btn--attack" data-touch="attack" type="button" aria-label="Heart attack">
+              <span class="touch__icon">♥</span>
+              <span class="touch__cd" data-cd="attack"></span>
+            </button>
+            <button class="touch__btn touch__btn--skill touch__btn--cannon" data-touch="cannon" type="button" aria-label="Love Cannon" hidden>
+              <span class="touch__icon">☄</span>
+              <span class="touch__cd" data-cd="cannon"></span>
+            </button>
+          </div>
+          <button class="touch__btn touch__btn--jump-xl" data-touch="jump" type="button" aria-label="Jump">
+            JUMP
+            <span class="touch__cd" data-cd="jump"></span>
           </button>
-          <button class="touch__btn touch__btn--attack" data-touch="attack" type="button" aria-label="Throw heart attack">
-            <span class="touch__icon">♥</span>
-            <span class="touch__cd" data-cd="attack"></span>
-          </button>
-          <button class="touch__btn touch__btn--cannon" data-touch="cannon" type="button" aria-label="Love Cannon (boss finisher)" hidden>
-            <span class="touch__icon">☄</span>
-            <span class="touch__cd" data-cd="cannon"></span>
-          </button>
-          <button class="touch__btn touch__btn--b"      data-touch="back"   type="button" aria-label="Back to menu">✕</button>
+          <span class="touch__label">ACTIONS</span>
         </div>
       </div>
 
@@ -354,6 +372,7 @@
     </main>
 
     <script src="assets/js/landing.js"></script>
+    <script src="assets/js/celebration.js"></script>
     <script src="assets/js/game.js"></script>
   </body>
 </html>

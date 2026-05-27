@@ -33,7 +33,7 @@
   document.body.classList.toggle("is-ios", IS_IOS);
 
   // Quick build banner in the console so we can verify the live deploy ships latest
-  try { console.log("[birthday] build 2026-05-26-d · touch=%s android=%s ios=%s",
+  try { console.log("[birthday] build 2026-05-26-e · touch=%s android=%s ios=%s",
     HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
 
   const screens = {
@@ -1036,9 +1036,19 @@
     attack: false, bark: false, dash: false, cannon: false,
   };
 
+  function resetMoveStick() {
+    keys.left = false;
+    keys.right = false;
+    const stickKnob = document.getElementById("touch-stick-knob");
+    const stickZone = document.getElementById("touch-stick");
+    if (stickKnob) stickKnob.style.transform = "translate(0px, 0px)";
+    if (stickZone) stickZone.classList.remove("is-active");
+  }
+
   function clearKeys() {
     keys.left = keys.right = keys.jump = false;
     keys.attack = keys.bark = keys.dash = keys.cannon = false;
+    resetMoveStick();
     document.querySelectorAll(".touch__btn.is-pressed")
       .forEach((b) => b.classList.remove("is-pressed"));
   }
@@ -1140,6 +1150,52 @@
 
   window.addEventListener("pagehide", clearKeys);
   document.addEventListener("pointercancel", clearKeys);
+
+  /* ─── Virtual joystick (left thumb) ─── */
+  const stickZone = document.getElementById("touch-stick");
+  const stickKnob = document.getElementById("touch-stick-knob");
+  const STICK_MAX = 44;
+  const STICK_DEAD = 11;
+
+  function moveStick(clientX, clientY) {
+    if (!stickZone || !stickKnob) return;
+    const rect = stickZone.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    if (dist > STICK_MAX) {
+      dx = (dx / dist) * STICK_MAX;
+      dy = (dy / dist) * STICK_MAX;
+    }
+    stickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    keys.left = dx < -STICK_DEAD;
+    keys.right = dx > STICK_DEAD;
+  }
+
+  if (stickZone) {
+    stickZone.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      stickZone.classList.add("is-active");
+      try { stickZone.setPointerCapture(e.pointerId); } catch (_) { /* */ }
+      moveStick(e.clientX, e.clientY);
+      SFX.blip();
+    });
+    stickZone.addEventListener("pointermove", (e) => {
+      if (!stickZone.classList.contains("is-active")) return;
+      e.preventDefault();
+      moveStick(e.clientX, e.clientY);
+    });
+    const endStick = (e) => {
+      e.preventDefault();
+      resetMoveStick();
+    };
+    stickZone.addEventListener("pointerup", endStick);
+    stickZone.addEventListener("pointercancel", endStick);
+    stickZone.addEventListener("lostpointercapture", resetMoveStick);
+    stickZone.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
 
   // Update cooldown indicator on touch buttons
   function setTouchCd(name, ratio /* 0..1 (full → ready) */, locked) {
@@ -2863,32 +2919,58 @@
     });
   }
 
-  function victory() {
-    if (gameState === "victory") return;
-    gameState = "victory";
+  function showVictoryFinale() {
     if (bossBarEl) bossBarEl.hidden = true;
     showOverlay({
       kind: "victory",
-      title: "★ BIRTHDAY CRYSTAL RESTORED ★",
+      title: "★ HAPPY BIRTHDAY MOUMITA ★",
       body: `
-        <div style="margin-bottom:12px;">Moumita, Manab, and Igloo defeated the Chaos Goblin King.<br/>
-        The candles relight. Fireworks bloom over the kingdom.</div>
+        <div style="margin-bottom:12px;">Everyone danced. Fireworks lit the sky.<br/>
+        Manab, Moumita & Igloo shared the biggest birthday hug.</div>
         <img src="assets/sprites/cake_scene.png" alt="Birthday cake"
              style="width:80%; max-width:380px; image-rendering: pixelated;
                     border: 3px solid #ff5fae; box-shadow: 0 0 0 3px #050214, 0 0 18px #ff5fae88;
                     margin: 0 auto; display:block;" />
-        <div style="margin-top:14px; color:#ff9fd6; font-size:18px;">♥ Happy Birthday, Moumita ♥</div>
+        <div style="margin-top:14px; color:#ff9fd6; font-size:18px;">♥ The Birthday Crystal shines forever ♥</div>
         <div style="opacity:.7; margin-top:6px;">— love, Manab & Igloo (and 32 bits of pixels)</div>
         <div style="opacity:.7; margin-top:6px;">love energy: ${Math.floor(xp)} · shards: ${counts.memory} · roses: ${counts.rose}</div>`,
       retryLabel: "PLAY AGAIN",
       retryHandler: () => {
+        document.body.classList.remove("in-celebration");
+        hideOverlay();
         resetGameState({ levelId: "forest" });
         gameState = "playing";
+        fitWorldCanvas();
+        worldRunning = true;
+        lastFrame = performance.now();
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(frame);
       },
     });
     SFX.heart();
     setTimeout(() => SFX.confirm(), 300);
     setTimeout(() => SFX.heart(), 600);
+  }
+
+  function victory() {
+    if (gameState === "victory") return;
+    gameState = "victory";
+    worldRunning = false;
+    clearKeys();
+    hideOverlay();
+
+    if (typeof window.startBirthdayCelebration === "function") {
+      window.startBirthdayCelebration({
+        sprites: {
+          girl:  sprites.girl,
+          boy:   sprites.boy,
+          husky: sprites.husky,
+        },
+        onComplete: showVictoryFinale,
+      });
+    } else {
+      showVictoryFinale();
+    }
   }
 
   /* ─── Manab's return gift: type "mwah" to unlock Love Cannon ─── */
