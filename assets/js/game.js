@@ -33,7 +33,7 @@
   document.body.classList.toggle("is-ios", IS_IOS);
 
   // Quick build banner in the console so we can verify the live deploy ships latest
-  try { console.log("[birthday] build 2026-05-26-c · touch=%s android=%s ios=%s",
+  try { console.log("[birthday] build 2026-05-26-d · touch=%s android=%s ios=%s",
     HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
 
   const screens = {
@@ -195,6 +195,11 @@
 
   // single delegated handler for the settings modal
   modalBody.addEventListener("click", (e) => {
+    if (e.target.closest("#gift-submit")) {
+      e.preventDefault();
+      submitManabGiftAnswer();
+      return;
+    }
     const b = e.target.closest("button[data-set]");
     if (!b) return;
     const key = b.dataset.set;
@@ -221,6 +226,13 @@
       try { localStorage.setItem("moumi.difficulty", settings.difficulty); } catch (_) {}
     }
     SFX.blip();
+  });
+
+  modalBody.addEventListener("keydown", (e) => {
+    if (e.target.id === "gift-answer" && e.key === "Enter") {
+      e.preventDefault();
+      submitManabGiftAnswer();
+    }
   });
 
   // Restore difficulty from previous sessions
@@ -530,8 +542,8 @@
         { type: "goblin", x: 1180, range: 40 },
       ],
       boss: { type: "slime", name: "FROSTING SLIME", x: 1500, hp: 14 },
-      // Letter #1 on the ground path just before the boss — easy to grab on the way
-      secret: { x: 1000, y: GROUND_Y - 22, letter: 1 },
+      // Letter #1 — early on the path (triggers the mwah puzzle if not solved yet)
+      secret: { x: 320, y: GROUND_Y - 22, letter: 1 },
       next: "school",
     },
 
@@ -828,7 +840,6 @@
     hasLoveCannon = true;
     loveCannonCdMs = 0;
     syncLoveCannonUI();
-    toast("★ MANAB'S LOVE CANNON — press C near a boss to one-shot it! ★", "#ffd166");
     SFX.confirm();
     setTimeout(() => SFX.heart(), 200);
   }
@@ -938,10 +949,8 @@
     refreshHUD();
     updateAbilityVisibility();
 
-    if (levelData.id === "forest" && !lettersFound[1] && !hasLoveCannon) {
-      setTimeout(() => {
-        toast("IGLOO: *sniff* …golden letter on the path — grab it before the slime!", "#ffd166");
-      }, 2800);
+    if (levelData.id === "forest" && !hasLoveCannon) {
+      setTimeout(() => showManabGiftPuzzle(), 2800);
     }
   }
 
@@ -1155,7 +1164,8 @@
 
   function tryLoveCannon() {
     if (!hasLoveCannon) {
-      toast("Find Manab's glowing letter on the forest path (before the boss)!", "#ff9fd6");
+      toast("Answer Manab's gift question first — type mwah!", "#ff9fd6");
+      showManabGiftPuzzle();
       return;
     }
     if (gameState !== "playing" && gameState !== "boss_intro") return;
@@ -1900,12 +1910,20 @@
       }
     }
 
-    // Secret love letter pickup (generous hitbox — it's a birthday gift!)
-    if (secret && !secret.collected) {
-      if (Math.abs(secret.x - (player.x + player.w / 2)) < 22 &&
-          Math.abs(secret.y - (player.y + player.h / 2)) < 28) {
-        secret.collected = true;
-        openLoveLetter(secret.letter);
+    // Letter #1 → Manab's gift puzzle (type mwah). Other letters → read once.
+    if (secret) {
+      const nearSecret =
+        Math.abs(secret.x - (player.x + player.w / 2)) < 22 &&
+        Math.abs(secret.y - (player.y + player.h / 2)) < 28;
+      if (nearSecret) {
+        if (secret.letter === 1 && !hasLoveCannon) {
+          showManabGiftPuzzle();
+        } else if (!secret.collected) {
+          secret.collected = true;
+          openLoveLetter(secret.letter);
+        } else if (secret.letter === 1 && hasLoveCannon) {
+          openLoveLetter(1);
+        }
       }
     }
   }
@@ -2317,7 +2335,9 @@
       }
     }
 
-    if (secret && !secret.collected) {
+    const showSecretEnv =
+      secret && (secret.letter === 1 ? !hasLoveCannon : !secret.collected);
+    if (showSecretEnv) {
       const x = Math.round(secret.x - camera.x);
       if (x > -30 && x < LW + 30) {
         const y = Math.round(secret.y + Math.sin(performance.now() * 0.003) * 3);
@@ -2340,9 +2360,14 @@
         wctx.fill();
         wctx.fillStyle = "#ffd166";
         wctx.fillRect(x - 2, y - 8, 4, 3);
-        wctx.fillStyle = "#ffffff";
-        wctx.font = "8px monospace";
-        wctx.fillText("♥", x - 3, y - 2);
+        wctx.fillStyle = "#ffd166";
+        wctx.font = "7px var(--font-pixel), monospace";
+        wctx.fillText("?", x - 2, y - 14);
+        if (secret.letter === 1 && !hasLoveCannon) {
+          wctx.fillStyle = "#fff4dc";
+          wctx.font = "6px var(--font-pixel), monospace";
+          wctx.fillText("GIFT", x - 8, y + 14);
+        }
       }
     }
   }
@@ -2866,6 +2891,63 @@
     setTimeout(() => SFX.heart(), 600);
   }
 
+  /* ─── Manab's return gift: type "mwah" to unlock Love Cannon ─── */
+  function submitManabGiftAnswer() {
+    const input = document.getElementById("gift-answer");
+    const hint  = document.getElementById("gift-hint");
+    if (!input) return;
+
+    const val = input.value.trim().toLowerCase().replace(/[~!.\s]+$/g, "");
+    if (val === "mwah") {
+      lettersFound[1] = true;
+      if (secret && secret.letter === 1) secret.collected = true;
+      closeModal();
+      grantLoveCannon();
+      toast("Manab's Love Cannon is yours. Press C (☄) at the boss! ♥", "#ffd166");
+      SFX.confirm();
+      setTimeout(() => SFX.heart(), 200);
+      return;
+    }
+
+    if (hint) {
+      hint.hidden = false;
+      hint.textContent = "Igloo: *boop* …not quite! Manab's return gift is a kiss. Type: mwah";
+    }
+    toast("try again — type mwah", "#ff9fd6");
+    SFX.blip();
+    input.focus();
+    input.select();
+  }
+
+  function showManabGiftPuzzle() {
+    if (hasLoveCannon) return;
+    openModal("MANAB'S RETURN GIFT", `
+      <div class="gift-puzzle">
+        <p class="credits__line" style="opacity:.85">
+          Manab left a question before the Love Cannon unlocks…
+        </p>
+        <p class="credits__line gift-puzzle__question">
+          What is <strong>Manab's return gift</strong> to Moumita?
+        </p>
+        <input type="text" id="gift-answer" class="gift-puzzle__input"
+               placeholder="type your answer…" autocomplete="off" autocapitalize="off"
+               spellcheck="false" maxlength="24" inputmode="text" />
+        <button type="button" class="gift-puzzle__submit" id="gift-submit">UNLOCK GIFT</button>
+        <p class="gift-puzzle__hint" id="gift-hint" hidden></p>
+        <p class="credits__line" style="opacity:.5; margin-top:12px; font-size:14px;">
+          (press Enter to submit)
+        </p>
+      </div>
+    `);
+    setTimeout(() => {
+      const input = document.getElementById("gift-answer");
+      if (input) {
+        input.focus();
+        input.value = "";
+      }
+    }, 120);
+  }
+
   function openLoveLetter(letterId) {
     const letters = {
       1: {
@@ -2873,7 +2955,7 @@
         body: `the way you laugh at your own jokes before you finish them<br/>
                makes the whole day feel sun-warm.<br/><br/>
                i'd find this memory forest a hundred times to keep that laugh safe.<br/><br/>
-               <strong style="color:#ffd166">P.S. I hid a Love Cannon in this letter — press C (or ☄) next to any boss. One shot. Always.</strong><br/><br/>
+               <strong style="color:#ffd166">P.S. You already unlocked the Love Cannon with mwah. Press C (☄) at any boss!</strong><br/><br/>
                — m`,
       },
       2: {
@@ -2897,12 +2979,7 @@
     };
     const L = letters[letterId] || letters[1];
     openModal(L.title, `<div class="credits"><p class="credits__line">${L.body}</p></div>`);
-    if (letterId === 1 && !lettersFound[1]) {
-      lettersFound[1] = true;
-      grantLoveCannon();
-    } else {
-      toast("you found a hidden love letter!", "#ff5fae");
-    }
+    toast("you found a hidden love letter!", "#ff5fae");
     SFX.heart();
     setTimeout(() => SFX.heart(), 300);
   }

@@ -1801,6 +1801,56 @@ body.is-touch.in-world .audio-toggle {
 
 .hint-cannon-note { opacity: 0.55; font-size: 0.9em; }
 body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
+
+/* Manab's return gift puzzle (type mwah) */
+.gift-puzzle {
+  text-align: center;
+  padding: 8px 4px 4px;
+}
+.gift-puzzle__question {
+  font-size: 18px;
+  margin: 16px 0 14px;
+  color: var(--gold-1);
+  text-shadow: 0 0 8px rgba(255, 209, 102, 0.5);
+}
+.gift-puzzle__input {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto 14px;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  text-align: center;
+  color: var(--paper);
+  background: rgba(10, 5, 32, 0.9);
+  border: 3px solid var(--gold-2);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 16px rgba(255, 209, 102, 0.45);
+  border-radius: 4px;
+  outline: none;
+}
+.gift-puzzle__input:focus {
+  border-color: var(--pink-2);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 20px rgba(255, 95, 174, 0.55);
+}
+.gift-puzzle__submit {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--night-0);
+  background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
+  border: 3px solid #c9a030;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 18px rgba(255, 209, 102, 0.55);
+}
+.gift-puzzle__submit:hover { filter: brightness(1.08); }
+.gift-puzzle__hint {
+  margin-top: 12px;
+  font-size: 15px;
+  color: var(--pink-1);
+}
+.gift-puzzle__hint[hidden] { display: none; }
 .ability.is-new {
   animation: ability-pop 0.9s ease;
 }
