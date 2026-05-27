@@ -33,7 +33,7 @@
   document.body.classList.toggle("is-ios", IS_IOS);
 
   // Quick build banner in the console so we can verify the live deploy ships latest
-  try { console.log("[birthday] build 2026-05-28-h · touch=%s android=%s ios=%s",
+  try { console.log("[birthday] build 2026-05-28-i · touch=%s android=%s ios=%s",
     HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
 
   const screens = {
@@ -100,6 +100,13 @@
   const modalTitle = document.getElementById("modal-title");
   const modalBody  = document.getElementById("modal-body");
   const modalClose = document.getElementById("modal-close");
+
+  function gameplayPaused() {
+    if (document.body.classList.contains("modal-open")) return true;
+    if (overlay && !overlay.hidden) return true;
+    if (chapterCard && !chapterCard.hidden) return true;
+    return false;
+  }
 
   function openModal(title, html) {
     modalTitle.textContent = title;
@@ -569,8 +576,8 @@
         { type: "goblin", x: 1180, range: 40 },
       ],
       boss: { type: "slime", name: "FROSTING SLIME", x: 1500, hp: 14 },
-      // Letter #1 — early on the path (triggers the mwah puzzle if not solved yet)
-      secret: { x: 320, y: GROUND_Y - 22, letter: 1 },
+      // Letter #1 — on a platform off the main path (avoid accidental trigger after first fight)
+      secret: { x: 480, y: GROUND_Y - 58, letter: 1 },
       next: "school",
     },
 
@@ -808,6 +815,7 @@
   /** @type {{x1:number,y1:number,x2:number,y2:number,life:number}|null} */
   let loveCannonBeam = null;
   let lettersFound = { 1: false, 2: false, 3: false, 4: false };
+  let giftPuzzleOffered = false; // true after mwah puzzle shown once (avoid re-trigger loops)
 
   // Game state
   let gameState = "playing"; // playing | chapter_complete | game_over | victory | boss_intro
@@ -919,7 +927,7 @@
       boss = null;
     }
 
-    secret = levelData.secret ? { ...levelData.secret, collected: false } : null;
+    secret = levelData.secret ? { ...levelData.secret, collected: false, prompted: false } : null;
 
     // Trees / fireflies (visual decoration tuned per level)
     fireflies = [];
@@ -976,10 +984,11 @@
     refreshHUD();
     updateAbilityVisibility();
 
-    if (levelData.id === "forest" && !hasLoveCannon) {
+    if (levelData.id === "forest" && !hasLoveCannon && !giftPuzzleOffered) {
       const puzzleDelay = HAS_TOUCH ? 3600 : 2800;
       setTimeout(() => {
-        if (!hasLoveCannon && screens.world.classList.contains("is-active")) {
+        if (!hasLoveCannon && !giftPuzzleOffered &&
+            screens.world.classList.contains("is-active")) {
           showManabGiftPuzzle();
         }
       }, puzzleDelay);
@@ -1262,9 +1271,10 @@
   const LOVE_CANNON_RANGE = 360; // px — boss bar appears inside this
 
   function tryLoveCannon() {
+    if (gameplayPaused()) return;
     if (!hasLoveCannon) {
       toast("Answer Manab's gift question first — type mwah!", "#ff9fd6");
-      showManabGiftPuzzle();
+      showManabGiftPuzzle(true);
       return;
     }
     if (gameState !== "playing" && gameState !== "boss_intro") return;
@@ -1310,6 +1320,7 @@
   }
 
   function tryAttack() {
+    if (gameplayPaused()) return;
     if (gameState !== "playing" && gameState !== "boss_intro") return;
     if (player.attackCdMs > 0) return;
     player.attackCdMs = HEART_CD;
@@ -1334,6 +1345,7 @@
   }
 
   function tryBark() {
+    if (gameplayPaused()) return;
     if (gameState !== "playing" && gameState !== "boss_intro") return;
     if (player.barkCdMs > 0) return;
     player.barkCdMs = BARK_CD;
@@ -1355,6 +1367,7 @@
   }
 
   function tryJump() {
+    if (gameplayPaused()) return;
     if (gameState !== "playing" && gameState !== "boss_intro") return;
     if (player.onGround) {
       player.vy = -8.4;
@@ -1380,6 +1393,7 @@
   }
 
   function tryDash() {
+    if (gameplayPaused()) return;
     if (!abilities.dash) return;
     if (player.dashCdMs > 0 || player.dashMs > 0) return;
     player.dashCdMs = DASH_CD;
@@ -1539,6 +1553,7 @@
   const MOVE_SPEED = 2.0;
 
   function update(dt) {
+    if (gameplayPaused()) return;
     if (gameState === "game_over" || gameState === "victory" || gameState === "chapter_complete") return;
 
     // Tick player cooldowns and timers
@@ -2009,19 +2024,23 @@
       }
     }
 
-    // Letter #1 → Manab's gift puzzle (type mwah). Other letters → read once.
-    if (secret) {
+    // Secret letters — trigger once per visit (never every frame while standing on them)
+    if (secret && !secret.prompted) {
       const nearSecret =
         Math.abs(secret.x - (player.x + player.w / 2)) < 22 &&
         Math.abs(secret.y - (player.y + player.h / 2)) < 28;
       if (nearSecret) {
+        secret.prompted = true;
         if (secret.letter === 1 && !hasLoveCannon) {
           showManabGiftPuzzle();
         } else if (!secret.collected) {
           secret.collected = true;
-          openLoveLetter(secret.letter);
-        } else if (secret.letter === 1 && hasLoveCannon) {
-          openLoveLetter(1);
+          lettersFound[secret.letter] = true;
+          if (secret.letter === 1) {
+            showManabGiftPuzzle(true);
+          } else {
+            openLoveLetter(secret.letter);
+          }
         }
       }
     }
@@ -2850,8 +2869,10 @@
   let lastFrame = performance.now();
   let rafId = 0;
   function frame(now) {
-    rafId = 0;
-    if (!worldRunning) return;
+    if (!worldRunning) {
+      rafId = 0;
+      return;
+    }
     const dt = Math.min(48, now - lastFrame);
     lastFrame = now;
 
@@ -2925,6 +2946,7 @@
   function doGameOver(reason) {
     if (gameState === "game_over") return;
     gameState = "game_over";
+    clearKeys();
     if (bossBarEl) bossBarEl.hidden = true;
     showOverlay({
       kind: "gameover",
@@ -2943,6 +2965,7 @@
   function chapterComplete() {
     if (gameState === "chapter_complete") return;
     gameState = "chapter_complete";
+    clearKeys();
     const nextId = levelData.next;
     showOverlay({
       kind: "chapter",
@@ -3044,9 +3067,11 @@
     input.select();
   }
 
-  function showManabGiftPuzzle() {
+  function showManabGiftPuzzle(force) {
     if (hasLoveCannon) return;
+    if (!force && giftPuzzleOffered && modal.hidden) return;
     if (!modal.hidden && /RETURN GIFT/i.test(modalTitle.textContent || "")) return;
+    giftPuzzleOffered = true;
     openModal("MANAB'S RETURN GIFT", `
       <div class="gift-puzzle">
         <p class="credits__line" style="opacity:.85">
@@ -3082,6 +3107,8 @@
   }
 
   function openLoveLetter(letterId) {
+    const titleNeedle = `LETTER #${letterId}`;
+    if (!modal.hidden && (modalTitle.textContent || "").includes(titleNeedle)) return;
     const letters = {
       1: {
         title: "TO MOUMITA · LETTER #1",
@@ -3139,6 +3166,7 @@
     // retry chapter: keep XP, refill HP, reset enemies + boss + collectibles for level
     hp = hpMax;
     midnightMs = Math.max(midnightMs, 5 * 60 * 1000); // ensure at least 5 min remaining on retry
+    if (!hasLoveCannon) giftPuzzleOffered = false;
     loadLevel(levelData ? levelData.id : "forest");
   }
 
@@ -3151,6 +3179,7 @@
     loveCannonCdMs = 0;
     loveCannonBeam = null;
     lettersFound = { 1: false, 2: false, 3: false, 4: false };
+    giftPuzzleOffered = false;
     midnightMs = 11 * 60 * 1000 + 42 * 1000;
     startedEnding = false;
     hintIdx = 0;
