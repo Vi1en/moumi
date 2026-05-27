@@ -33,7 +33,7 @@
   document.body.classList.toggle("is-ios", IS_IOS);
 
   // Quick build banner in the console so we can verify the live deploy ships latest
-  try { console.log("[birthday] build 2026-05-26-e · touch=%s android=%s ios=%s",
+  try { console.log("[birthday] build 2026-05-27-g · touch=%s android=%s ios=%s",
     HAS_TOUCH, IS_ANDROID, IS_IOS); } catch (_) { /* */ }
 
   const screens = {
@@ -105,8 +105,17 @@
     modalTitle.textContent = title;
     modalBody.innerHTML = html;
     modal.hidden = false;
+    document.body.classList.add("modal-open");
+    clearKeys();
   }
-  function closeModal() { modal.hidden = true; }
+  function closeModal() {
+    modal.hidden = true;
+    document.body.classList.remove("modal-open");
+    if (worldRunning) {
+      setTimeout(fitWorldCanvas, 60);
+      setTimeout(fitWorldCanvas, 350);
+    }
+  }
   modalClose.addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
@@ -461,32 +470,70 @@
   let worldRunning = false;
 
   function fitWorldCanvas() {
-    const rect = worldCanvas.parentElement.getBoundingClientRect();
-    const cssScale = Math.max(0.5, Math.min(rect.width / LW, rect.height / LH));
+    if (document.body.classList.contains("modal-open")) return;
+
+    const parent = worldCanvas.parentElement;
+    if (!parent) return;
+
+    const rect = parent.getBoundingClientRect();
+    let availW = rect.width;
+    let availH = rect.height;
+
+    // iOS / Android: use the visible play-area size (excludes HUD, quest, touch dock)
+    if (HAS_TOUCH && window.visualViewport && document.body.classList.contains("in-world")) {
+      const vv = window.visualViewport;
+      const pr = parent.getBoundingClientRect();
+      availW = pr.width;
+      availH = Math.max(80, Math.min(pr.height, vv.height - Math.max(0, pr.top)));
+    }
+
+    const questEl = parent.querySelector(".quest-log");
+    if (questEl && document.body.classList.contains("in-world")) {
+      availH -= questEl.getBoundingClientRect().height;
+    }
+
+    if (availW < 20 || availH < 20) return;
+
+    const cssScale = Math.max(0.45, Math.min(availW / LW, availH / LH));
     const drawW = Math.round(LW * cssScale);
     const drawH = Math.round(LH * cssScale);
 
-    worldDPR = Math.max(1, Math.floor(cssScale));
+    worldDPR = Math.max(1, Math.min(3, Math.floor(cssScale)));
     worldCanvas.width  = LW * worldDPR;
     worldCanvas.height = LH * worldDPR;
 
     worldCanvas.style.position = "absolute";
     worldCanvas.style.width  = drawW + "px";
     worldCanvas.style.height = drawH + "px";
+    const mobilePlay = HAS_TOUCH && document.body.classList.contains("in-world");
     worldCanvas.style.left = "50%";
-    worldCanvas.style.top  = "auto";
-    worldCanvas.style.bottom = "0";
-    worldCanvas.style.transform = "translateX(-50%)";
+    worldCanvas.style.right = "auto";
+    if (mobilePlay) {
+      worldCanvas.style.top = "50%";
+      worldCanvas.style.bottom = "auto";
+      worldCanvas.style.transform = "translate(-50%, -50%)";
+    } else {
+      worldCanvas.style.top = "auto";
+      worldCanvas.style.bottom = "0";
+      worldCanvas.style.transform = "translateX(-50%)";
+    }
+    worldCanvas.style.maxWidth = "100%";
+    worldCanvas.style.maxHeight = "100%";
 
     wctx.imageSmoothingEnabled = false;
     wctx.setTransform(worldDPR, 0, 0, worldDPR, 0, 0);
   }
 
-  function refit() { if (worldRunning) fitWorldCanvas(); }
+  function refit() {
+    if (worldRunning || screens.world.classList.contains("is-active")) {
+      fitWorldCanvas();
+    }
+  }
   window.addEventListener("resize", refit);
   window.addEventListener("orientationchange", () => {
     setTimeout(refit, 80);
-    setTimeout(refit, 350);
+    setTimeout(refit, 200);
+    setTimeout(refit, 500);
   });
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", refit);
@@ -950,7 +997,12 @@
     updateAbilityVisibility();
 
     if (levelData.id === "forest" && !hasLoveCannon) {
-      setTimeout(() => showManabGiftPuzzle(), 2800);
+      const puzzleDelay = HAS_TOUCH ? 3600 : 2800;
+      setTimeout(() => {
+        if (!hasLoveCannon && screens.world.classList.contains("is-active")) {
+          showManabGiftPuzzle();
+        }
+      }, puzzleDelay);
     }
   }
 
@@ -1095,7 +1147,7 @@
   const activePointers = new Map();
 
   function pressTouch(btn, on) {
-    if (!btn) return;
+    if (!btn || document.body.classList.contains("modal-open")) return;
     btn.classList.toggle("is-pressed", on);
     const which = btn.dataset.touch;
     if (which === "left")   keys.left  = on;
@@ -1158,7 +1210,7 @@
   const STICK_DEAD = 11;
 
   function moveStick(clientX, clientY) {
-    if (!stickZone || !stickKnob) return;
+    if (!stickZone || !stickKnob || document.body.classList.contains("modal-open")) return;
     const rect = stickZone.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
@@ -1176,6 +1228,7 @@
 
   if (stickZone) {
     stickZone.addEventListener("pointerdown", (e) => {
+      if (document.body.classList.contains("modal-open")) return;
       e.preventDefault();
       stickZone.classList.add("is-active");
       try { stickZone.setPointerCapture(e.pointerId); } catch (_) { /* */ }
@@ -3003,6 +3056,7 @@
 
   function showManabGiftPuzzle() {
     if (hasLoveCannon) return;
+    if (!modal.hidden && /RETURN GIFT/i.test(modalTitle.textContent || "")) return;
     openModal("MANAB'S RETURN GIFT", `
       <div class="gift-puzzle">
         <p class="credits__line" style="opacity:.85">
@@ -3024,10 +3078,17 @@
     setTimeout(() => {
       const input = document.getElementById("gift-answer");
       if (input) {
-        input.focus();
         input.value = "";
+        try {
+          input.focus({ preventScroll: false });
+        } catch (_) {
+          input.focus();
+        }
+        try {
+          input.scrollIntoView({ block: "center", inline: "nearest" });
+        } catch (_) { /* */ }
       }
-    }, 120);
+    }, HAS_TOUCH ? 280 : 120);
   }
 
   function openLoveLetter(letterId) {
@@ -3128,5 +3189,9 @@
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(frame);
     hideOverlay();
+    // Let flex layout + touch dock settle before final canvas measure (iOS/Android)
+    requestAnimationFrame(() => fitWorldCanvas());
+    setTimeout(fitWorldCanvas, 120);
+    setTimeout(fitWorldCanvas, 450);
   }
 })();

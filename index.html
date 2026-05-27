@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <title>Moumita's Birthday Adventure · A Pixel Love Letter</title>
     <meta
       name="description"
@@ -19,7 +19,7 @@
       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/styles.css?v=20260527" />
   </head>
   <body>
     <!-- ════════════ Global cinematic overlays ════════════ -->
@@ -267,6 +267,14 @@
         </header>
 
         <div class="world" id="world">
+          <footer class="quest-log" id="quest-log">
+            <div class="quest-log__title">QUEST</div>
+            <div class="quest-log__body" id="quest-text">
+              Collect 3 floating Memory Shards drifting through the forest.
+              Igloo says they smell like birthday icing.
+            </div>
+          </footer>
+
           <canvas id="world-canvas"></canvas>
 
           <div class="world__hint" id="world-hint">
@@ -312,67 +320,51 @@
           </div>
         </div>
 
-        <footer class="quest-log">
-          <div class="quest-log__title">QUEST</div>
-          <div class="quest-log__body" id="quest-text">
-            Collect 3 floating Memory Shards drifting through the forest.
-            Igloo says they smell like birthday icing.
+        <!-- Touch dock: in-flow below game (never fixed overlay) -->
+        <div class="touch-dock" id="touch" aria-hidden="true">
+          <div class="touch-dock__row">
+            <div class="touch-dock__side touch-dock__side--move">
+              <div class="touch__stick" id="touch-stick" aria-label="Move left and right">
+                <div class="touch__stick-base"></div>
+                <div class="touch__stick-knob" id="touch-stick-knob"></div>
+              </div>
+              <span class="touch__label">MOVE</span>
+            </div>
+            <button class="touch__btn touch__btn--pause" data-touch="back" type="button" aria-label="Menu">Ⅱ</button>
+            <div class="touch-dock__side touch-dock__side--actions">
+              <div class="touch__skills">
+                <button class="touch__btn touch__btn--skill touch__btn--bark" data-touch="bark" type="button" aria-label="Bark">
+                  <span class="touch__icon">🐾</span>
+                  <span class="touch__cd" data-cd="bark"></span>
+                </button>
+                <button class="touch__btn touch__btn--skill touch__btn--attack" data-touch="attack" type="button" aria-label="Attack">
+                  <span class="touch__icon">♥</span>
+                  <span class="touch__cd" data-cd="attack"></span>
+                </button>
+                <button class="touch__btn touch__btn--skill touch__btn--cannon" data-touch="cannon" type="button" aria-label="Cannon" hidden>
+                  <span class="touch__icon">☄</span>
+                  <span class="touch__cd" data-cd="cannon"></span>
+                </button>
+              </div>
+              <button class="touch__btn touch__btn--jump-xl" data-touch="jump" type="button" aria-label="Jump">JUMP</button>
+              <span class="touch__label">JUMP · FIGHT</span>
+            </div>
           </div>
-        </footer>
+        </div>
       </section>
-
-      <!-- ═══════════════════════════════════════════════════════════ -->
-      <!-- TOUCH CONTROLS — two-thumb mobile layout                    -->
-      <!-- Left thumb: move stick · Right thumb: jump + actions        -->
-      <!-- ═══════════════════════════════════════════════════════════ -->
-      <div class="touch" id="touch" aria-hidden="true">
-        <button class="touch__btn touch__btn--pause" data-touch="back" type="button" aria-label="Pause / menu">Ⅱ</button>
-
-        <div class="touch__zone touch__zone--left">
-          <div class="touch__stick" id="touch-stick" aria-label="Move left and right">
-            <div class="touch__stick-base"></div>
-            <div class="touch__stick-knob" id="touch-stick-knob"></div>
-          </div>
-          <span class="touch__label">MOVE</span>
-        </div>
-
-        <div class="touch__zone touch__zone--right">
-          <div class="touch__fight">
-            <button class="touch__btn touch__btn--skill touch__btn--bark" data-touch="bark" type="button" aria-label="Bark stun">
-              <span class="touch__icon">🐾</span>
-              <span class="touch__cd" data-cd="bark"></span>
-            </button>
-            <button class="touch__btn touch__btn--skill touch__btn--attack" data-touch="attack" type="button" aria-label="Heart attack">
-              <span class="touch__icon">♥</span>
-              <span class="touch__cd" data-cd="attack"></span>
-            </button>
-            <button class="touch__btn touch__btn--skill touch__btn--cannon" data-touch="cannon" type="button" aria-label="Love Cannon" hidden>
-              <span class="touch__icon">☄</span>
-              <span class="touch__cd" data-cd="cannon"></span>
-            </button>
-          </div>
-          <button class="touch__btn touch__btn--jump-xl" data-touch="jump" type="button" aria-label="Jump">
-            JUMP
-            <span class="touch__cd" data-cd="jump"></span>
-          </button>
-          <span class="touch__label">ACTIONS</span>
-        </div>
-      </div>
-
-      <!-- ═══════════════════════════════════════════════════════════ -->
-      <!-- MODALS · Gallery / Settings / Credits                       -->
-      <!-- ═══════════════════════════════════════════════════════════ -->
-      <div class="modal" id="modal" hidden>
-        <div class="modal__panel">
-          <button class="modal__close" id="modal-close" type="button">✕</button>
-          <h3 class="modal__title" id="modal-title">Title</h3>
-          <div class="modal__body" id="modal-body"></div>
-        </div>
-      </div>
     </main>
 
-    <script src="assets/js/landing.js"></script>
-    <script src="assets/js/celebration.js"></script>
-    <script src="assets/js/game.js"></script>
+    <!-- Modal outside screen-stack so it sits above touch dock & audio toggle -->
+    <div class="modal" id="modal" hidden>
+      <div class="modal__panel">
+        <button class="modal__close" id="modal-close" type="button">✕</button>
+        <h3 class="modal__title" id="modal-title">Title</h3>
+        <div class="modal__body" id="modal-body"></div>
+      </div>
+    </div>
+
+    <script src="assets/js/landing.js?v=20260527"></script>
+    <script src="assets/js/celebration.js?v=20260527"></script>
+    <script src="assets/js/game.js?v=20260527"></script>
   </body>
 </html>

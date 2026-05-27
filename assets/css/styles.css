@@ -997,6 +997,124 @@ kbd {
   flex-direction: column;
   background:
     linear-gradient(180deg, #2a1554 0%, #4a1d6d 60%, #6e2b66 100%);
+  min-height: 0;
+  min-height: 100dvh;
+}
+
+/* Play area = compact HUD + game (quest overlays canvas) + touch dock */
+@media (hover: none) and (pointer: coarse) {
+  .screen--world.is-active {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+body.is-touch.in-world .screen--world {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+body.is-touch.in-world .screen--world .hud {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto;
+  padding: 4px 8px;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+body.is-touch.in-world .screen--world .hud__center {
+  display: none;
+}
+
+body.is-touch.in-world .screen--world .hud__avatar {
+  width: 30px;
+  height: 30px;
+  border-width: 2px;
+}
+
+body.is-touch.in-world .screen--world .hud__name {
+  font-size: 5px;
+  letter-spacing: 0.02em;
+}
+
+body.is-touch.in-world .screen--world .bar {
+  grid-template-columns: 18px 1fr;
+  gap: 3px;
+}
+
+body.is-touch.in-world .screen--world .bar__value {
+  display: none;
+}
+
+body.is-touch.in-world .screen--world .hud__group--right {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+body.is-touch.in-world .screen--world .hud__clock-label {
+  display: none;
+}
+
+body.is-touch.in-world .screen--world .hud__clock-time {
+  font-size: 9px;
+}
+
+body.is-touch.in-world .screen--world .hud__inventory .slot {
+  font-size: 6px;
+  padding: 2px 4px;
+}
+
+body.is-touch.in-world .screen--world .world {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Quest floats on top of the game — does not steal a flex row */
+body.is-touch.in-world .world .quest-log {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 4px 8px;
+  gap: 6px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  background: rgba(10, 5, 32, 0.88);
+  border-top: none;
+  border-bottom: 2px solid var(--pink-2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+body.is-touch.in-world .world .quest-log__title {
+  font-size: 7px;
+  padding: 3px 6px;
+}
+
+body.is-touch.in-world .world .quest-log__body {
+  font-size: 12px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: left;
 }
 
 /* HUD */
@@ -1191,11 +1309,10 @@ kbd {
 
 #world-canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   display: block;
   image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  /* width/height/position set by fitWorldCanvas() in game.js */
 }
 
 .world__hint {
@@ -1237,7 +1354,15 @@ kbd {
   transform: translate(-50%, 0);
 }
 
-/* quest log */
+/* quest log (inside .world — overlays canvas, never stacks with touch dock) */
+.world .quest-log {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+}
+
 .quest-log {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -1271,13 +1396,21 @@ kbd {
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 7000;
+  z-index: 10050;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(3px);
+  padding:
+    max(12px, env(safe-area-inset-top, 12px))
+    max(12px, env(safe-area-inset-right, 12px))
+    max(12px, env(safe-area-inset-bottom, 12px))
+    max(12px, env(safe-area-inset-left, 12px));
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   animation: hero-in 0.25s ease-out;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal[hidden] {
@@ -1286,9 +1419,11 @@ kbd {
 
 .modal__panel {
   position: relative;
-  max-width: min(720px, 92vw);
-  max-height: 86vh;
+  width: min(720px, 100%);
+  max-width: 100%;
+  max-height: min(86vh, 86dvh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--night-1);
   border: 4px solid var(--paper);
   box-shadow:
@@ -1464,57 +1599,68 @@ kbd {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   📱 Touch controls — two-thumb layout (mobile)
+   📱 Touch dock — two-thumb layout (in-flow, no overlap)
    ══════════════════════════════════════════════════════════════════════ */
-.touch {
-  position: fixed;
-  inset: 0;
+.touch-dock {
   display: none;
-  z-index: 6500;
-  pointer-events: none;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
   padding:
-    env(safe-area-inset-top, 0px)
-    env(safe-area-inset-right, 0px)
-    max(12px, env(safe-area-inset-bottom, 0px))
-    env(safe-area-inset-left, 0px);
+    4px max(8px, env(safe-area-inset-right, 8px))
+    max(4px, env(safe-area-inset-bottom, 4px))
+    max(8px, env(safe-area-inset-left, 8px));
+  background: rgba(8, 4, 24, 0.94);
+  border-top: 3px solid var(--cyan-3);
+  box-shadow: 0 -4px 0 var(--night-0), 0 -8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 20;
+  touch-action: none;
 }
 
-.touch__zone {
-  position: absolute;
-  bottom: max(8px, env(safe-area-inset-bottom, 0px));
+.touch-dock__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.touch-dock__side {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  pointer-events: none;
+  gap: 4px;
+  min-width: 0;
 }
 
-.touch__zone--left {
-  left: max(10px, env(safe-area-inset-left, 0px));
+.touch-dock__side--move {
+  justify-self: start;
   align-items: flex-start;
 }
 
-.touch__zone--right {
-  right: max(10px, env(safe-area-inset-right, 0px));
+.touch-dock__side--actions {
+  justify-self: end;
   align-items: flex-end;
 }
 
 .touch__label {
   font-family: var(--font-pixel);
-  font-size: 6px;
-  letter-spacing: 0.2em;
-  color: rgba(255, 255, 255, 0.45);
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  font-size: 5px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.4);
   pointer-events: none;
+  white-space: nowrap;
 }
 
 /* Virtual joystick — left thumb */
 .touch__stick {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: clamp(64px, 18vw, 88px);
+  height: clamp(64px, 18vw, 88px);
   pointer-events: auto;
   touch-action: none;
+  flex-shrink: 0;
 }
 .touch__stick-base {
   position: absolute;
@@ -1543,18 +1689,20 @@ kbd {
   border-color: var(--pink-2);
 }
 
-/* Right thumb — skill row + big jump */
-.touch__fight {
+/* Right thumb — skills + jump */
+.touch__skills {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  flex-wrap: nowrap;
+  gap: clamp(4px, 1.5vw, 8px);
   pointer-events: auto;
-  margin-bottom: 4px;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
 .touch__btn {
-  width: 56px;
-  height: 56px;
+  width: clamp(40px, 11vw, 48px);
+  height: clamp(40px, 11vw, 48px);
   font-family: var(--font-pixel);
   font-size: 18px;
   color: var(--paper);
@@ -1575,32 +1723,33 @@ kbd {
 }
 
 .touch__btn--jump-xl {
-  width: 88px;
-  height: 88px;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  width: clamp(56px, 15vw, 68px);
+  height: clamp(56px, 15vw, 68px);
+  font-size: clamp(7px, 2vw, 9px);
+  letter-spacing: 0.1em;
   border-color: var(--pink-2);
   color: var(--paper);
   background: rgba(80, 10, 50, 0.88);
-  box-shadow: 0 0 0 4px var(--night-0), 0 0 24px rgba(255, 95, 174, 0.65);
+  box-shadow: 0 0 0 3px var(--night-0), 0 0 20px rgba(255, 95, 174, 0.55);
   pointer-events: auto;
+  margin-top: 2px;
 }
 
 .touch__btn--skill {
-  width: 58px;
-  height: 58px;
+  width: clamp(44px, 12vw, 50px);
+  height: clamp(44px, 12vw, 50px);
+  font-size: clamp(16px, 4.5vw, 20px);
 }
 
 .touch__btn--pause {
-  position: absolute;
-  top: max(8px, env(safe-area-inset-top, 0px));
-  right: max(10px, env(safe-area-inset-right, 0px));
-  width: 40px;
-  height: 40px;
-  font-size: 12px;
+  width: 36px;
+  height: 36px;
+  font-size: 10px;
   pointer-events: auto;
-  opacity: 0.75;
+  opacity: 0.85;
   border-color: var(--paper);
+  align-self: center;
+  margin-bottom: 8px;
 }
 .touch__btn--pause:active { opacity: 1; }
 
@@ -1673,34 +1822,96 @@ kbd {
 }
 .touch__btn { position: relative; overflow: hidden; }
 
-/* Show the touch UI only on actual touch devices, and only inside the game world.
-   Detection is JS-driven (body.is-touch) because Android Chrome may incorrectly
-   report hover: hover / pointer: fine when a stylus, Bluetooth mouse, or
-   desktop-site mode is active, breaking pure CSS detection. */
-body.is-touch.in-world .touch {
-  display: block;
+/* Show touch dock only on touch devices in the game world */
+body.is-touch.in-world .touch-dock {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+body.is-touch.in-world .touch__stick {
+  width: 68px;
+  height: 68px;
+}
+
+body.is-touch.in-world .touch__stick-knob {
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+}
+
+body.is-touch.in-world .touch__btn--jump-xl {
+  width: 54px;
+  height: 54px;
+  font-size: 7px;
+}
+
+body.is-touch.in-world .touch__btn--skill {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+body.is-touch.in-world .touch__btn--pause {
+  width: 30px;
+  height: 30px;
+  font-size: 9px;
+  margin-bottom: 2px;
+}
+
+body.is-touch.in-world .touch__label {
+  display: none;
 }
 
 body.is-touch.in-world .world__hint {
   display: none;
 }
 
+/* Hide touch when modal / keyboard is up so you can type "mwah" */
+body.modal-open .touch-dock,
+body.modal-open .audio-toggle {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+body.modal-open .screen.is-active {
+  pointer-events: none !important;
+}
+
+body.modal-open .modal {
+  pointer-events: auto;
+}
+
+body.modal-open .modal__panel,
+body.modal-open .modal__panel * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+body.modal-open .gift-puzzle__input {
+  -webkit-user-select: text;
+  user-select: text;
+  pointer-events: auto;
+}
+
 /* Bigger / glowier touch buttons feel right on phones */
 body.is-touch .audio-toggle {
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  right: 10px;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  right: max(8px, env(safe-area-inset-right, 8px));
   padding: 5px 8px;
   font-size: 7px;
   letter-spacing: 0.04em;
+  z-index: 8000;
 }
 
-/* On touch devices, when the game world is active, move the audio toggle out
-   of the HUD's way (regardless of width — Android phones can be wider than
-   520px). */
 body.is-touch.in-world .audio-toggle {
-  top: auto;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
-  right: 14px;
+  top: calc(env(safe-area-inset-top, 0px) + 4px);
+  right: max(6px, env(safe-area-inset-right, 6px));
+  left: auto;
+  bottom: auto;
+  padding: 3px 6px;
+  font-size: 6px;
+  z-index: 120;
 }
 
 /* SKIP button on the cutscene must not be intercepted by the audio toggle */
@@ -1719,7 +1930,7 @@ body.is-touch.in-world .audio-toggle {
    ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 520px) {
   .hero {
-    padding: 12px 12px 96px; /* leave room for the touch d-pad */
+    padding: 12px 12px 24px;
     grid-template-rows: auto auto auto auto auto;
     gap: 6px;
   }
@@ -1792,17 +2003,18 @@ body.is-touch.in-world .audio-toggle {
 
   /* World — hide the keyboard hint pill on touch devices */
   .world__hint { display: none; }
-  /* Leave room at the bottom for the touch d-pad */
-  .quest-log { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); }
-  .world     { padding-bottom: 0; }
 
   .quest-log {
     padding: 6px 10px;
-    /* leave clearance for the touch d-pad below */
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
   }
   .quest-log__body { font-size: 13px; }
   .quest-log__title { font-size: 8px; padding: 4px 6px; }
+
+  .touch__stick-knob {
+    width: 42px;
+    height: 42px;
+    margin: -21px 0 0 -21px;
+  }
 
   /* Cutscene tighter on phones */
   .screen--cutscene {
@@ -1844,6 +2056,42 @@ body.is-touch.in-world .audio-toggle {
   .tagline { display: none; }
   .menu__hint { display: none; }
   .menu__item { padding: 6px 8px; font-size: 9px; }
+}
+
+/* Landscape in-game: more room for canvas + controls */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.is-touch.in-world .world .quest-log {
+    max-height: 40px;
+    padding: 3px 6px;
+  }
+  body.is-touch.in-world .screen--world .hud__bars .bar__value {
+    display: none;
+  }
+  body.is-touch.in-world .touch-dock {
+    padding: 4px max(8px, env(safe-area-inset-right, 8px))
+      max(4px, env(safe-area-inset-bottom, 4px))
+      max(8px, env(safe-area-inset-left, 8px));
+  }
+  .touch__stick {
+    width: 68px;
+    height: 68px;
+  }
+  .touch__stick-knob {
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+  }
+  .touch__btn--jump-xl {
+    width: 56px;
+    height: 56px;
+    font-size: 7px;
+  }
+  .touch__btn--skill,
+  .touch__btn {
+    width: 40px;
+    height: 40px;
+  }
+  .touch__label { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1902,9 +2150,10 @@ body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
   width: 100%;
   max-width: 280px;
   margin: 0 auto 14px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   font-family: var(--font-mono);
-  font-size: 22px;
+  /* 16px+ prevents iOS Safari zoom-on-focus */
+  font-size: 18px;
   text-align: center;
   color: var(--paper);
   background: rgba(10, 5, 32, 0.9);
@@ -1912,6 +2161,9 @@ body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
   box-shadow: 0 0 0 3px var(--night-0), 0 0 16px rgba(255, 209, 102, 0.45);
   border-radius: 4px;
   outline: none;
+  touch-action: manipulation;
+  -webkit-user-select: text;
+  user-select: text;
 }
 .gift-puzzle__input:focus {
   border-color: var(--pink-2);
@@ -1945,10 +2197,9 @@ body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
 }
 @media (max-width: 520px) {
   .ability { width: 18px; height: 18px; font-size: 11px; }
-  .touch__stick { width: 108px; height: 108px; }
-  .touch__stick-knob { width: 46px; height: 46px; margin: -23px 0 0 -23px; }
-  .touch__btn--jump-xl { width: 80px; height: 80px; font-size: 10px; }
-  .touch__btn--skill { width: 52px; height: 52px; }
+  .hud__abilities { display: none; }
+  .modal__panel { padding: 16px 14px; max-height: 92dvh; }
+  .gift-puzzle__question { font-size: 15px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -2170,7 +2421,7 @@ body.has-love-cannon .hint-cannon-note { opacity: 1; color: var(--gold-2); }
   50% { transform: translateX(-50%) scale(1.04); filter: brightness(1.2); }
 }
 
-body.in-celebration .touch,
+body.in-celebration .touch-dock,
 body.in-celebration .hud,
 body.in-celebration .quest-log,
 body.in-celebration .world__hint {
@@ -2197,6 +2448,16 @@ body.in-celebration .world__hint {
   40% { transform: translateX(calc(-50% + 5px)); }
   60% { transform: translateX(calc(-50% - 4px)); }
   80% { transform: translateX(calc(-50% + 3px)); }
+}
+body.is-touch.in-world .world.is-hurt #world-canvas {
+  animation: hurt-shake-touch 0.32s ease;
+}
+@keyframes hurt-shake-touch {
+  0%, 100% { transform: translate(-50%, -50%); }
+  20% { transform: translate(calc(-50% - 6px), -50%); }
+  40% { transform: translate(calc(-50% + 5px), -50%); }
+  60% { transform: translate(calc(-50% - 4px), -50%); }
+  80% { transform: translate(calc(-50% + 3px), -50%); }
 }
 
 /* clock low-time pulse (used JS-side via class) */
